@@ -1,0 +1,486 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>KeyFollower &mdash; swmr_tools 0.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="DataSource" href="datasource.html" />
+    <link rel="prev" title="Getting Started" href="getting_started.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> swmr_tools
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">KeyFollower</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#follower">Follower</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-iteration-through-an-all-non-zero-key-dataset">Example - Iteration through an all non-zero key dataset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-iteration-through-a-dataset-containg-zeros">Example - Iteration through a dataset containg zeros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-using-other-termination-methods">Example - Using other termination methods</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#framegrabber">FrameGrabber</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#using-framegrabber-to-extract-frames-from-a-key-index">Using FrameGrabber to Extract Frames from a key index</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="datasource.html">DataSource</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance_enhancements_with_dask.html">Interfacing With Dask</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">swmr_tools</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">swmr_tools</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>KeyFollower</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/keyfollower.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="keyfollower">
+<h1>KeyFollower<a class="headerlink" href="#keyfollower" title="Permalink to this headline">¶</a></h1>
+<p>A Jupyter Notebook version of this tutorial can be found at:
+<a class="reference external" href="https://github.com/rparke/Iterator/blob/master/tutorials/KeyFollower.ipynb">https://github.com/rparke/Iterator/blob/master/tutorials/KeyFollower.ipynb</a></p>
+<p>The KeyFollower class is designed to facilitate live data processing of
+datasets contained within an hdf5 file. It achieves this through the use of
+two main classes:</p>
+<ul class="simple">
+<li><p>Follower</p></li>
+<li><p>FrameGrabber</p></li>
+</ul>
+<p>This tutorial assumes a basic level of skill using the h5py library.
+Specifically, you should be comfortable with using h5py to:</p>
+<ul class="simple">
+<li><p>Open and create hdf5_files</p></li>
+<li><p>Navigate files using python dictionary methods: <em>e.g.</em> using the get() method</p></li>
+<li><p>Create groups and datasets</p></li>
+</ul>
+<p>If you are unfamiliar with how to do any of this we recommend reading the
+h5py quick start guide: <a class="reference external" href="https://docs.h5py.org/en/stable/quick.html">https://docs.h5py.org/en/stable/quick.html</a></p>
+<div class="section" id="follower">
+<h2>Follower<a class="headerlink" href="#follower" title="Permalink to this headline">¶</a></h2>
+<p>The Follower class can be used to create instances of a python iterator object.
+The Follower is central to everything that swmr_tools does and most other
+classes either directly use it or are dependent upon the keys it produces.</p>
+<div class="section" id="example-iteration-through-an-all-non-zero-key-dataset">
+<h3>Example - Iteration through an all non-zero key dataset<a class="headerlink" href="#example-iteration-through-an-all-non-zero-key-dataset" title="Permalink to this headline">¶</a></h3>
+<p>We will create a dataset of non-zero integers, respresenting a complete set of
+scans all flushed to disk</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">from</span> <span class="nn">swmr_tools.KeyFollower</span> <span class="kn">import</span> <span class="n">Follower</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1">#create a sequential array of the numbers 1-8 and reshape them into an array</span>
+<span class="c1"># of shape (2,4,1,1)</span>
+<span class="n">complete_key_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>We will create an empty hdf5 file, create a group called “keys” and create
+a dataset in that group called “key_1” where we will add our array of non-zero
+keys</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test_file.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">libver</span> <span class="o">=</span> <span class="s2">&quot;latest&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">&quot;keys&quot;</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">[</span><span class="s2">&quot;keys&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;key_1&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">complete_key_array</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, we shall create an instance of the Follower class and demonstrate a
+simple example of its use. At a minimum we must pass the h5py.File object
+we wish to read from and a list containing the paths to the hdf5 groups
+containing our keys.</p>
+<p>Shown below is an example of using an instance of Follower within a for loop,
+as you would with any standard iterable object. For this basic example of a
+dataset containing only non-zero values, the loop runs 8 times and stops as
+expected</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># using an instance of Follower in a for loop</span>
+<span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test_file.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">swmr</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">kf</span> <span class="o">=</span> <span class="n">Follower</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;keys&quot;</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kf</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="mi">0</span>
+<span class="mi">1</span>
+<span class="mi">2</span>
+<span class="mi">3</span>
+<span class="mi">4</span>
+<span class="mi">5</span>
+<span class="mi">6</span>
+<span class="mi">7</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-iteration-through-a-dataset-containg-zeros">
+<h3>Example - Iteration through a dataset containg zeros<a class="headerlink" href="#example-iteration-through-a-dataset-containg-zeros" title="Permalink to this headline">¶</a></h3>
+<p>The key dataset is a form of metadata which (as we will see in
+detail when looking at the FrameGrabber class) represents whether a frame of
+a given dataset is complete and has been flushed to disk.</p>
+<p>Non-zero key values represent frames that have been completely written and
+flushed to disk, while values of zero represent a frame that has not. We
+therefore expect the iterator to halt when the next key is zero and either to
+wait for it to update to a non-zero value and continue or to stop iteration
+entirely if a termination condition is met.</p>
+<p>We will demonstrate a simple example of this below using a timeout method as
+a termination condition. Timeout is the default method used by Follower
+(although others can be set)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test_file.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="c1">#set all values in the second row to zero</span>
+    <span class="n">f</span><span class="p">[</span><span class="s2">&quot;keys/key_1&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">,:,:,:]</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test_file.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">swmr</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">kf</span> <span class="o">=</span> <span class="n">Follower</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;keys&quot;</span><span class="p">],</span> <span class="n">timeout</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kf</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="mi">0</span>
+<span class="mi">1</span>
+<span class="mi">2</span>
+<span class="mi">3</span>
+</pre></div>
+</div>
+<p>The example above clearly shows that the follower iterates through the first
+row waits for the timeout and then proceeds to halt iteration when the key at
+index [1,0] does not change to a non-zero value within the 1 second timeout.</p>
+</div>
+<div class="section" id="example-using-other-termination-methods">
+<h3>Example - Using other termination methods<a class="headerlink" href="#example-using-other-termination-methods" title="Permalink to this headline">¶</a></h3>
+<p>The timeout method is the default for halting iteration. Other methods can be
+used by passing a list of method names (as strings) as an argument when
+instantiating the Follower</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test_file.h5&quot;</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">swmr_mode</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">kf</span> <span class="o">=</span> <span class="n">Follower</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;keys&quot;</span><span class="p">],</span> <span class="n">termination_conditions</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;always_true&quot;</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kf</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="mi">0</span>
+<span class="mi">1</span>
+<span class="mi">2</span>
+<span class="mi">3</span>
+</pre></div>
+</div>
+<p>As expected, we see the same outcome above as when a timeout was used. What
+has happened is that whilever there were non-zero keys the iterator behaved as
+normal. As soon as the next available key was zero the iterator stopped
+straight away (rather than waiting for a timeout).</p>
+</div>
+</div>
+<div class="section" id="framegrabber">
+<h2>FrameGrabber<a class="headerlink" href="#framegrabber" title="Permalink to this headline">¶</a></h2>
+<p>Indices produced by instances of the KeyFollower class correspond to frames of
+relavent datasets. To understand how the FrameGrabber class works it is important
+to understand that instances of Follower do <strong>not</strong> return the value of a key,
+they return the index of the key for a flattened version of the array. We will
+demonstrate this with an example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">complete_key_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">low</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="mi">20000</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+<span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test_file.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">libver</span> <span class="o">=</span> <span class="s2">&quot;latest&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">&quot;keys&quot;</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">[</span><span class="s2">&quot;keys&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;key_1&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">complete_key_array</span><span class="p">)</span>
+
+    <span class="c1">#print dataset to demonstrate the non-sequential nature of the keys</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">&quot;keys/key_1&quot;</span><span class="p">][</span><span class="o">...</span><span class="p">])</span>
+<span class="n">array</span><span class="p">([[</span><span class="mi">15083</span><span class="p">,</span> <span class="mi">15092</span><span class="p">,</span> <span class="mi">15918</span><span class="p">,</span> <span class="mi">11475</span><span class="p">],</span>
+<span class="p">[</span><span class="mi">10070</span><span class="p">,</span>  <span class="mi">9500</span><span class="p">,</span> <span class="mi">15115</span><span class="p">,</span>  <span class="mi">8331</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>As you can see above the key values are all non-zero, however they are not in
+sequential order and many of the values are quite high. When using an instance
+of the KeyFollower to iterate through this we simply recieve an index</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test_file.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">swmr</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">kf</span> <span class="o">=</span> <span class="n">Follower</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;keys&quot;</span><span class="p">],</span> <span class="n">timeout</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kf</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="mi">0</span>
+<span class="mi">1</span>
+<span class="mi">2</span>
+<span class="mi">3</span>
+<span class="mi">4</span>
+<span class="mi">5</span>
+<span class="mi">6</span>
+<span class="mi">7</span>
+</pre></div>
+</div>
+<p>If we just want to access the value corresponding to the index we can use
+numpys unravel_index() method</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test_file.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">swmr</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">&quot;keys/key_1&quot;</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">))])</span>
+<span class="mi">15115</span>
+</pre></div>
+</div>
+<p>This is fine for extracting a scalar, but does not help when trying to extract
+a vector valued frame from a dataset. For this purpose we have created the
+FrameGrabber class</p>
+<div class="section" id="using-framegrabber-to-extract-frames-from-a-key-index">
+<h3>Using FrameGrabber to Extract Frames from a key index<a class="headerlink" href="#using-framegrabber-to-extract-frames-from-a-key-index" title="Permalink to this headline">¶</a></h3>
+<p>First, we will create a small dataset with a corresponding key dataset containing
+with all values non-zero</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">complete_key_dataset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="n">complete_data_dataset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">low</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+<span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test_file.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">libver</span> <span class="o">=</span> <span class="s2">&quot;latest&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">&quot;keys&quot;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">[</span><span class="s2">&quot;keys&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;key_1&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">complete_key_dataset</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;data_1&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">complete_data_dataset</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>FrameGrabber takes two arguments, the full path to the dataset you want to
+extract frames from and an open h5py.File object containing the dataset. To
+extract a frame, call the method FrameGrabber.Grabber() with the key index</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test_file.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">swmr</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">kf</span> <span class="o">=</span> <span class="n">Follower</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;keys&quot;</span><span class="p">],</span> <span class="n">timeout</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">fg</span> <span class="o">=</span> <span class="n">FrameGrabber</span><span class="p">(</span><span class="s2">&quot;data/data_1&quot;</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kf</span><span class="p">:</span>
+
+        <span class="n">frame</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">Grabber</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Printing frame </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">frame</span> <span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Shape of frame: </span><span class="si">{</span><span class="n">frame</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">Printing</span> <span class="n">frame</span> <span class="mi">0</span><span class="p">:</span>
+<span class="p">[[[[</span><span class="mi">913</span>  <span class="mi">25</span> <span class="mi">989</span>  <span class="mi">89</span> <span class="mi">425</span> <span class="mi">221</span> <span class="mi">634</span> <span class="mi">947</span> <span class="mi">510</span> <span class="mi">616</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">819</span>  <span class="mi">56</span> <span class="mi">268</span> <span class="mi">162</span> <span class="mi">474</span> <span class="mi">543</span> <span class="mi">471</span> <span class="mi">368</span> <span class="mi">948</span> <span class="mi">295</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">723</span> <span class="mi">453</span> <span class="mi">937</span> <span class="mi">548</span> <span class="mi">473</span> <span class="mi">463</span> <span class="mi">542</span> <span class="mi">230</span> <span class="mi">759</span> <span class="mi">567</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">517</span> <span class="mi">821</span> <span class="mi">388</span> <span class="mi">941</span> <span class="mi">523</span> <span class="mi">420</span> <span class="mi">564</span> <span class="mi">606</span> <span class="mi">491</span> <span class="mi">985</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">427</span> <span class="mi">967</span> <span class="mi">845</span> <span class="mi">115</span> <span class="mi">526</span> <span class="mi">812</span> <span class="mi">742</span> <span class="mi">419</span> <span class="mi">411</span> <span class="mi">531</span><span class="p">]]]]</span>
+<span class="n">Shape</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="n">Printing</span> <span class="n">frame</span> <span class="mi">1</span><span class="p">:</span>
+<span class="p">[[[[</span><span class="mi">533</span> <span class="mi">411</span> <span class="mi">801</span> <span class="mi">739</span> <span class="mi">470</span> <span class="mi">908</span> <span class="mi">493</span> <span class="mi">634</span> <span class="mi">137</span> <span class="mi">678</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">862</span> <span class="mi">382</span> <span class="mi">633</span> <span class="mi">113</span> <span class="mi">952</span> <span class="mi">152</span> <span class="mi">520</span> <span class="mi">937</span> <span class="mi">413</span> <span class="mi">685</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">414</span> <span class="mi">985</span>  <span class="mi">69</span> <span class="mi">161</span>  <span class="mi">69</span>  <span class="mi">53</span> <span class="mi">453</span> <span class="mi">978</span> <span class="mi">846</span> <span class="mi">953</span><span class="p">]</span>
+   <span class="p">[</span> <span class="mi">94</span> <span class="mi">346</span> <span class="mi">223</span> <span class="mi">891</span> <span class="mi">499</span> <span class="mi">992</span> <span class="mi">888</span> <span class="mi">846</span> <span class="mi">573</span> <span class="mi">507</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">139</span> <span class="mi">345</span> <span class="mi">834</span> <span class="mi">396</span> <span class="mi">445</span> <span class="mi">789</span> <span class="mi">361</span>  <span class="mi">73</span> <span class="mi">504</span> <span class="mi">500</span><span class="p">]]]]</span>
+<span class="n">Shape</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="n">Printing</span> <span class="n">frame</span> <span class="mi">2</span><span class="p">:</span>
+<span class="p">[[[[</span><span class="mi">492</span> <span class="mi">428</span> <span class="mi">465</span> <span class="mi">627</span> <span class="mi">165</span> <span class="mi">583</span> <span class="mi">558</span> <span class="mi">868</span> <span class="mi">133</span>  <span class="mi">64</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">926</span> <span class="mi">732</span> <span class="mi">564</span> <span class="mi">725</span> <span class="mi">424</span> <span class="mi">144</span> <span class="mi">991</span> <span class="mi">139</span> <span class="mi">114</span> <span class="mi">356</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">941</span> <span class="mi">653</span> <span class="mi">303</span> <span class="mi">665</span> <span class="mi">768</span> <span class="mi">384</span> <span class="mi">894</span> <span class="mi">239</span> <span class="mi">720</span> <span class="mi">510</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">663</span> <span class="mi">815</span> <span class="mi">228</span> <span class="mi">888</span> <span class="mi">325</span> <span class="mi">356</span> <span class="mi">293</span> <span class="mi">225</span> <span class="mi">481</span> <span class="mi">700</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">155</span> <span class="mi">506</span> <span class="mi">906</span>  <span class="mi">29</span> <span class="mi">307</span> <span class="mi">589</span>  <span class="mi">16</span> <span class="mi">264</span> <span class="mi">616</span>  <span class="mi">88</span><span class="p">]]]]</span>
+<span class="n">Shape</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="n">Printing</span> <span class="n">frame</span> <span class="mi">3</span><span class="p">:</span>
+<span class="p">[[[[</span><span class="mi">376</span>  <span class="mi">22</span> <span class="mi">142</span> <span class="mi">805</span> <span class="mi">266</span> <span class="mi">176</span> <span class="mi">824</span>  <span class="mi">85</span> <span class="mi">886</span> <span class="mi">771</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">403</span> <span class="mi">795</span> <span class="mi">603</span> <span class="mi">528</span> <span class="mi">349</span> <span class="mi">117</span> <span class="mi">384</span> <span class="mi">176</span> <span class="mi">186</span> <span class="mi">324</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">561</span> <span class="mi">467</span> <span class="mi">322</span> <span class="mi">430</span> <span class="mi">792</span> <span class="mi">977</span> <span class="mi">606</span> <span class="mi">906</span> <span class="mi">833</span> <span class="mi">243</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">954</span> <span class="mi">466</span> <span class="mi">125</span> <span class="mi">597</span> <span class="mi">959</span> <span class="mi">245</span> <span class="mi">699</span>  <span class="mi">36</span> <span class="mi">254</span> <span class="mi">410</span><span class="p">]</span>
+   <span class="p">[</span><span class="mi">943</span> <span class="mi">629</span> <span class="mi">468</span> <span class="mi">131</span> <span class="mi">657</span> <span class="mi">717</span> <span class="mi">734</span> <span class="mi">482</span> <span class="mi">657</span> <span class="mi">895</span><span class="p">]]]]</span>
+<span class="n">Shape</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The above example demonstrates the ability of the FrameGrabber class to
+return corresponding vector-valued dataset frames of the correct shape. This
+lets us do operations frame by frame live as frames are being written. Below
+is a simple data reduction example where we return the sum of each frame</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test_file.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">swmr</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">kf</span> <span class="o">=</span> <span class="n">Follower</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;keys&quot;</span><span class="p">],</span> <span class="n">timeout</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">fg</span> <span class="o">=</span> <span class="n">FrameGrabber</span><span class="p">(</span><span class="s2">&quot;data/data_1&quot;</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kf</span><span class="p">:</span>
+        <span class="n">current_frame</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">Grabber</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">data_reduced_frame</span> <span class="o">=</span> <span class="n">current_frame</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">data_reduced_frame</span> <span class="o">=</span> <span class="n">data_reduced_frame</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Printing frame number </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Frame = </span><span class="si">{</span><span class="n">data_reduced_frame</span><span class="si">}</span><span class="se">\n</span><span class="s2"> Shape = </span><span class="si">{</span><span class="n">data_reduced_frame</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">Printing</span> <span class="n">frame</span> <span class="n">number</span> <span class="mi">0</span>
+<span class="n">Frame</span> <span class="o">=</span> <span class="p">[[[[</span><span class="mi">25616</span><span class="p">]]]]</span>
+<span class="n">Shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">Printing</span> <span class="n">frame</span> <span class="n">number</span> <span class="mi">1</span>
+<span class="n">Frame</span> <span class="o">=</span> <span class="p">[[[[</span><span class="mi">25727</span><span class="p">]]]]</span>
+<span class="n">Shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">Printing</span> <span class="n">frame</span> <span class="n">number</span> <span class="mi">2</span>
+<span class="n">Frame</span> <span class="o">=</span> <span class="p">[[[[</span><span class="mi">23705</span><span class="p">]]]]</span>
+<span class="n">Shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">Printing</span> <span class="n">frame</span> <span class="n">number</span> <span class="mi">3</span>
+<span class="n">Frame</span> <span class="o">=</span> <span class="p">[[[[</span><span class="mi">28003</span><span class="p">]]]]</span>
+<span class="n">Shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="datasource.html" class="btn btn-neutral float-right" title="DataSource" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="getting_started.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Diamond Light Source Ltd
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

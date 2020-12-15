@@ -1,0 +1,340 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Interfacing With Dask &mdash; swmr_tools 0.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="swmr_tools" href="modules.html" />
+    <link rel="prev" title="DataSource" href="datasource.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> swmr_tools
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="keyfollower.html">KeyFollower</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource.html">DataSource</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Interfacing With Dask</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#example-using-dask-to-speed-up-data-reduction">Example - Using Dask to Speed up Data Reduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequential-example">Sequential Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#job-size-and-overheads">Job Size and Overheads</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">swmr_tools</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">swmr_tools</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Interfacing With Dask</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/performance_enhancements_with_dask.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="interfacing-with-dask">
+<h1>Interfacing With Dask<a class="headerlink" href="#interfacing-with-dask" title="Permalink to this headline">¶</a></h1>
+<p>Dask is an open source library in python for parallel computing. It has a very
+extensive feature set allowing projects built in standard scientific python
+libraries to scale for very large datasets. In swmr_tools we currently only
+use a small subset of dasks features to help parallelise operations on dataset
+frames.</p>
+<div class="section" id="example-using-dask-to-speed-up-data-reduction">
+<h2>Example - Using Dask to Speed up Data Reduction<a class="headerlink" href="#example-using-dask-to-speed-up-data-reduction" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="sequential-example">
+<h3>Sequential Example<a class="headerlink" href="#sequential-example" title="Permalink to this headline">¶</a></h3>
+<p>For this example we will create a reasonably large dataset containing random numbers</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">from</span> <span class="nn">swmr_tools.KeyFollower</span> <span class="kn">import</span> <span class="n">Follower</span><span class="p">,</span> <span class="n">FrameGrabber</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="n">complete_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="n">complete_dataset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">low</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+
+<span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;test.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">libver</span> <span class="o">=</span> <span class="s2">&quot;latest&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">[</span><span class="s1">&#39;keys&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;key_1&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">complete_keys</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;data_1&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">complete_dataset</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We will next simulate the running of an artficially long calculation</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">long_function</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">filepath</span> <span class="o">=</span> <span class="s2">&quot;test.h5&quot;</span><span class="p">,</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">&quot;data/data_1&quot;</span><span class="p">):</span>
+<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">swmr</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">fg</span> <span class="o">=</span> <span class="n">FrameGrabber</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+    <span class="n">frame</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">Grabber</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">key_generator</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="n">filepath</span> <span class="o">=</span> <span class="s2">&quot;test.h5&quot;</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">swmr</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">kf</span> <span class="o">=</span> <span class="n">Follower</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;keys&#39;</span><span class="p">],</span> <span class="n">timeout</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kf</span><span class="p">:</span>
+            <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;End&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We will run this serial job and time how long it takes to complete</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">threading</span> <span class="kn">import</span> <span class="n">Thread</span>
+<span class="kn">from</span> <span class="nn">queue</span> <span class="kn">import</span> <span class="n">Queue</span>
+
+<span class="k">def</span> <span class="nf">frame_consumer_serial</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="n">filepath</span> <span class="o">=</span> <span class="s2">&quot;test.h5&quot;</span><span class="p">,</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">&quot;data/data_1&quot;</span><span class="p">):</span>
+    <span class="n">return_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="k">while</span> <span class="n">key</span> <span class="o">!=</span> <span class="s1">&#39;End&#39;</span><span class="p">:</span>
+        <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">long_function</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">return_list</span>
+
+<span class="k">def</span> <span class="nf">run_in_serial</span><span class="p">():</span>
+
+    <span class="c1">#Create two threads that will read and write keys from a shared queue object</span>
+    <span class="n">queue</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
+    <span class="n">key_generator_thread</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span> <span class="o">=</span> <span class="n">key_generator</span><span class="p">(</span><span class="n">queue</span><span class="p">))</span>
+    <span class="n">frame_consumer_serial_thread</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span> <span class="o">=</span> <span class="n">frame_consumer_serial</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">queue</span><span class="p">,))</span>
+
+    <span class="c1">#Start timer and start threads running</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">key_generator_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">frame_consumer_serial_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="c1">#Wait for both threads to finish, stop timer and print time taken</span>
+    <span class="n">key_generator_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="n">frame_consumer_serial_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="n">finish_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Serial time taken = </span><span class="si">{</span><span class="n">finish_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">run_in_serial</span><span class="p">()</span>
+<span class="n">Serial</span> <span class="n">time</span> <span class="n">taken</span> <span class="o">=</span> <span class="mf">25.042722702026367</span>
+</pre></div>
+</div>
+<p>We will slightly augment the run_in_serial function to run on dask</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">frame_consumer_parallel</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="n">filepath</span> <span class="o">=</span> <span class="s2">&quot;test.h5&quot;</span><span class="p">,</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">&quot;data/data_1&quot;</span><span class="p">):</span>
+    <span class="n">return_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="k">while</span> <span class="n">key</span> <span class="o">!=</span> <span class="s1">&#39;End&#39;</span><span class="p">:</span>
+        <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">long_function</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">client</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">return_list</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">run_in_parallel_in_dask</span><span class="p">():</span>
+    <span class="n">queue</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
+
+    <span class="c1">#Create two threads that will read and write keys from a shared queue object</span>
+    <span class="n">key_generator_thread</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span> <span class="o">=</span> <span class="n">key_generator</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">queue</span><span class="p">,))</span>
+    <span class="n">frame_consumer_serial_thread</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span> <span class="o">=</span> <span class="n">frame_consumer_parallel</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">queue</span><span class="p">,))</span>
+
+    <span class="c1">#Start timer and start threads running</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">key_generator_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">frame_consumer_serial_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="c1">#Wait for both threads to finish, stop timer and print time taken</span>
+    <span class="n">key_generator_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="n">frame_consumer_serial_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="n">finish_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Serial time taken = </span><span class="si">{</span><span class="n">finish_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">run_in_parallel_in_dask</span><span class="p">()</span>
+<span class="n">Parallel</span> <span class="n">time</span> <span class="n">taken</span> <span class="o">=</span> <span class="mf">5.716917276382446</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="job-size-and-overheads">
+<h3>Job Size and Overheads<a class="headerlink" href="#job-size-and-overheads" title="Permalink to this headline">¶</a></h3>
+<p>The action of calling :title: ‘client.submit(<a href="#id1"><span class="problematic" id="id2">*</span></a>args)’ carries with it an overhead of
+~1 ms per task. Consequently, for tasks that are already fast (like calling
+np.sum on a reasonably small frame) we either recommend submitting several
+frames in a single job or running the job in a serial fashion depending upon
+your needs.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="modules.html" class="btn btn-neutral float-right" title="swmr_tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="datasource.html" class="btn btn-neutral float-left" title="DataSource" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Diamond Light Source Ltd
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
