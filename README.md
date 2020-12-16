@@ -6,9 +6,9 @@ swmr_tools is a Python library developed by Diamond Light Source ltd designed to
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install swmr_tools
 
-'''bash
+```bash
 pip install swmr_tools
-'''
+```
 
 ## Usage
 

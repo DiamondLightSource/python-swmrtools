@@ -1,4 +1,4 @@
-swmr_tools
+References
 ==========
 
 .. toctree::

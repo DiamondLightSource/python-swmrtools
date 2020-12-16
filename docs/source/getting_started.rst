@@ -8,7 +8,7 @@ easy. swmr_tools can be installed from PyPi using the command::
     
 Alternatively you can clone the git repository containing swmr_tools using::
 
-    git clone https://github.com/rparke/Iterator
+    git clone https://github.com/DiamondLightSource/python-swmrtools
     
     
     
