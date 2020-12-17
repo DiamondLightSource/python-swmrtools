@@ -1,6 +1,6 @@
 # swmr_tools
 
-swmr_tools is a Python library developed by Diamond Light Source ltd designed to facilitate reading and processing data from nexus (hdf5) files as they are being written
+swmr_tools is a Python library developed by Diamond Light Source Ltd designed to facilitate reading and processing data from NeXus files as they are being written
 
 ## Installation
 

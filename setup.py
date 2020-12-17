@@ -4,11 +4,11 @@ setup(
   packages = ['swmr_tools'],   # Chose the same as "name"
   version = '0.3',      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
-  description = 'Python iterator for safely monitoring nexus files',   # Give a short description about your library
+  description = 'Python iterator for safely monitoring NeXus files',   # Give a short description about your library
   author = 'Diamond Light Source Ltd',                   # Type in your name
   author_email = 'scientificsoftware@diamond.ac.uk',      # Type in your E-Mail
   url = 'https://github.com/DiamondLightSource/python-swmrtools',   # Provide either the link to your github or to your website
-  download_url = 'https://github.com/rparke/Iterator/archive/v0.1.tar.gz',    # I explain this later on
+  download_url = 'https://github.com/DiamondLightSource/python-swmrtools/v0.3.tar.gz', 
   keywords = ['HDF5', 'Iterator', 'Diamond'],   # Keywords that define your package best
    install_requires=[            # I get to this in a second
            'h5py', 
