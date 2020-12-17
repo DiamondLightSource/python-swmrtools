@@ -142,3 +142,6 @@ cython_debug/
 
 # Temporary hdf5 files
 *.h5
+
+# Dask
+dask-worker-space
