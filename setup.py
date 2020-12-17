@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'swmr_tools',         # How you named your package folder (MyLib)
   packages = ['swmr_tools'],   # Chose the same as "name"
-  version = '0.1',      # Start with a small number and increase it with every change you make
+  version = '0.3',      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
   description = 'Python iterator for safely monitoring nexus files',   # Give a short description about your library
   author = 'Diamond Light Source Ltd',                   # Type in your name
