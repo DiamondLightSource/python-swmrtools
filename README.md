@@ -12,6 +12,6 @@ pip install swmr_tools
 
 ## Usage
 
-- For full examples of use please see the full documentation at https://iterator.readthedocs.io/en/latest/
+- For full examples of use please see the full documentation at https://python-swmrtools.readthedocs.io
 
 - Jupyter notebook tutorials for key functionality can be found in the tutorial directory in the git repository
