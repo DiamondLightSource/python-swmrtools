@@ -52,6 +52,7 @@ class Follower:
         self.current_key = -1
         self.current_max = -1
         self.timeout = timeout
+        self.start_time = None
         self.key_datasets = key_datasets
         self.termination_conditions = termination_conditions
         self._finish_tag = False
@@ -61,28 +62,27 @@ class Follower:
 
     def __next__(self):
 
+        if self.current_key < self.current_max:
+            self.current_key += 1
+            return self.current_key
+
         self._timer_reset()
-        if not self.is_finished():
-            while not self._is_next():
-                time.sleep(0.2)
-                if self.is_finished():
-                    self._finish_tag = True
-                    raise StopIteration
+        while not self._is_next():
+            time.sleep(0.2)
+            if self.is_finished():
+                self._finish_tag = True
+                raise StopIteration
 
-            if self._is_next():
-                self.current_key += 1
-                x = self.current_key
-                self._timer_reset()
-                return x
+            else:
+                self._finish_tag = True
+                raise StopIteration
 
-        else:
-            self._finish_tag = True
-            raise StopIteration
+        self.current_key += 1
+        return self.current_key
 
     def reset(self):
         """Reset the iterator to start again from index 0"""
         self.current_key = -1
-        self.current_max = -1
         self._finish_tag = False
 
     def _timer_reset(self):
@@ -91,23 +91,48 @@ class Follower:
 
     def _is_next(self):
         # returns true if all the keys for index current_key + 1 are nonzero
-        is_next = True
 
+        karray = self._get_keys()
+        if not karray:
+            return False
+
+        if len(karray) == 1:
+            merged = karray[0]
+        else:
+            max_size = max([x.size for x in karray])
+
+            merged = np.zeros((len(karray), max_size))
+            first = karray[0]
+            merged[0, : first.size] = merged[0, : first.size] + first
+            for k in karray[1:]:
+                merged[0, : k.size] = merged[0, : k.size] * k
+
+        new_max = np.argmax(merged == 0) - 1
+        if new_max < 0:
+            new_max = merged.size - 1
+
+        if self.current_max == new_max:
+            return False
+
+        self.current_max = new_max
+        return True
+
+    def _get_keys(self):
+        kds = []
         for key_path in self.key_datasets:
             for dataset in self.hdf5_file[key_path].values():
                 dataset.refresh()
-                # print(dataset.flatten()[self.current_key+1])
 
                 try:
-                    if dataset[...].flatten()[self.current_key + 1] == 0:
-                        is_next = False
-                    else:
-                        pass
+                    kds.append(dataset[...].flatten())
                 except Exception:
-                    is_next = False
-        return is_next
+                    return None
+        return kds
 
     def _timeout(self):
+        if not self.start_time:
+            return False
+
         if time.time() > self.start_time + self.timeout:
             return True
         else:
@@ -126,28 +151,11 @@ class Follower:
 
     def is_finished(self):
         """Returns True if the KeyFollower instance has completed its iteration"""
-        if (not self._is_next()) and (self._finish_condition()):
+        if (self.current_max == self.current_key) and (self._finish_condition()):
             return True
 
         else:
             return False
-
-    def _any_next(self):
-        any_next = True
-
-        for key_path in self.key_datasets:
-            for dataset in self.hdf5_file[key_path].values():
-                dataset.refresh()
-                # print(dataset.flatten()[self.current_key+1])
-
-                try:
-                    if (dataset[...].flatten()[self.current_key + 1 :] == 0).all():
-                        any_next = False
-                    else:
-                        pass
-                except Exception:
-                    any_next = False
-        return any_next
 
 
 class FrameGrabber:
