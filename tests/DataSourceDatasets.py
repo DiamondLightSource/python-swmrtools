@@ -9,6 +9,7 @@ def create_dataset_from_numpy_array(numpy_array):
     ds = DataSet(numpy_array.shape)
     ds[:] = numpy_array[:]
     ds.refresh = lambda: None
+    ds.max_shape = ds.shape
     return ds
 
 

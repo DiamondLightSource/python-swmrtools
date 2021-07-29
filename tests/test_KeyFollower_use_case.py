@@ -1,12 +1,22 @@
-from swmr_tools import KeyFollower
-import KeyFollowerDatasets as Dataset
-
+from swmr_tools import Follower
+from mock import Mock
+import numpy as np
+import pytest
+import utils
 
 def test_iterates_complete_dataset():
 
-    key_paths = ["keys"]
-    f = {"keys": {"complete": Dataset.complete_dataset()}}
-    kf = KeyFollower.Follower(f, key_paths, timeout=0.1)
+    key_paths = ["complete"]
+
+    mds = utils.make_mock()
+    mds.dataset = mds.dataset + 1
+
+    f = {"complete": mds}
+    kf = Follower(f, key_paths, timeout=0.1)
+    kf.check_datasets()
+
+    assert kf.scan_rank == 2
+
     current_key = 0
     for key in kf:
         current_key += 1
@@ -16,9 +26,14 @@ def test_iterates_complete_dataset():
 
 def test_iterates_incomplete_dataset():
 
-    key_paths = ["keys"]
-    f = {"keys": {"incomplete": Dataset.incomplete_dataset()}}
-    kf = KeyFollower.Follower(f, key_paths, timeout=0.1)
+    mds = utils.make_mock()
+    mds.dataset[:2,:,:,:] = 1
+    mds.dataset[2,0:5,:,] = 1
+
+    key_paths = ["incomplete"]
+    f = {"incomplete": mds}
+    kf = Follower(f, key_paths, timeout=0.1)
+    kf.check_datasets()
     current_key = 0
     for key in kf:
         current_key += 1
@@ -27,34 +42,35 @@ def test_iterates_incomplete_dataset():
 
 def test_iterates_multiple_incomplete_dataset():
 
-    key_paths = ["keys"]
+    mds = utils.make_mock()
+    mds.dataset[:,:,:,:] = 1
+    mdsi = utils.make_mock()
+    mdsi.dataset[:2,:,:,:] = 1
+    mdsi.dataset[2,0:5,:,] = 1
+
+    key_paths = ["complete", "incomplete"]
     f = {
-        "keys": {
-            "complete": Dataset.complete_dataset(),
-            "incomplete": Dataset.incomplete_dataset(),
-        }
+            "complete": mds,
+            "incomplete": mdsi
     }
-    kf = KeyFollower.Follower(f, key_paths, timeout=0.1)
+    kf = Follower(f, key_paths, timeout=0.1)
+    kf.check_datasets()
     current_key = 0
     for key in kf:
         current_key += 1
     assert current_key == 25
 
 
-def test_iterates_row_by_row():
-    key_paths = ["keys"]
-    f = {"keys": {"incomplete_row_by_row": Dataset.incomplete_row_by_row_dataset()}}
-    kf = KeyFollower.Follower(f, key_paths, timeout=0.1)
-    current_key = 0
-    for key in kf:
-        current_key += 1
-    assert current_key == 26
-
-
 def test_iterates_snake_scan():
-    key_paths = ["keys"]
-    f = {"keys": {"incomplete_snake_scan": Dataset.incomplete_snake_scan_dataset()}}
-    kf = KeyFollower.Follower(f, key_paths, timeout=0.1)
+
+
+    mds = utils.make_mock()
+    mds.dataset[:2,:,:,:] = 1
+    mds.dataset[2,1:,:,:] = 1
+
+    key_paths = ["incomplete"]
+    f = {"incomplete": mds}
+    kf = Follower(f, key_paths, timeout=0.1)
     current_key = 0
     for key in kf:
         current_key += 1
@@ -62,44 +78,65 @@ def test_iterates_snake_scan():
 
 
 def test_reads_updates():
-    key_paths = ["keys"]
-    f = {"keys": {"incomplete": Dataset.incomplete_dataset()}}
-    kf = KeyFollower.Follower(f, key_paths, timeout=0.1)
-    current_key = 0
-    for i in range(5):
-        next(kf)
-        current_key += 1
-    kf.hdf5_file = {"keys": {"updating": Dataset.complete_dataset()}}
 
+    mds = utils.make_mock()
+    mds.dataset.reshape((-1))[:26] = 1
+
+
+    key_paths = ["incomplete"]
+    f = {"incomplete": mds}
+    kf = Follower(f, key_paths, timeout=0.1)
+    current_key = 0
     for key in kf:
         current_key += 1
+
+        if (current_key == 25):
+            mds.dataset[...] = 1
 
     assert current_key == 50
 
 
 def test_update_changes_shape():
-    key_paths = ["keys"]
-    f = {"keys": {"small_incomplete": Dataset.small_incomplete_dataset()}}
-    kf = KeyFollower.Follower(f, key_paths, timeout=0.1)
+
+
+    mds = utils.make_mock(shape=[2,10,1,1])
+    mds.dataset[...] = 1
+
+    key_paths = ["incomplete"]
+    f = {"incomplete": mds}
+    kf = Follower(f, key_paths, timeout=0.1)
     current_key = 0
-    for i in range(5):
-        next(kf)
-        current_key += 1
-    kf.hdf5_file = {"keys": {"small_incomplete": Dataset.complete_dataset()}}
     for key in kf:
         current_key += 1
+
+        if (current_key == 20):
+            mds.dataset.resize((5,10,1,1),refcheck=False)
+            mds.dataset[...] = 1
+
     assert current_key == 50
 
 
-def test_index_independent_of_key_value():
-    key_paths = ["keys"]
-    f = {"keys": {"small_incomplete": Dataset.complete_dataset_random_integers()}}
-    current_key = 0
-    kf = KeyFollower.Follower(f, key_paths, timeout=0.1)
-    for key in kf:
-        assert current_key == key
-        current_key += 1
+def test_multiple_keys_from_node():
 
+
+    mds = utils.make_mock()
+    mds.dataset[:,:,:,:] = 1
+    mdsi = utils.make_mock()
+    mdsi.dataset[:2,:,:,:] = 1
+    mdsi.dataset[2,0:5,:,] = 1
+
+    key_paths = ["keys"]
+    f = {
+            "keys": ["a", "b"],
+            "keys/a": mds,
+            "keys/b":mdsi
+    }
+    kf = Follower(f, key_paths, timeout=0.1)
+    kf.check_datasets()
+    current_key = 0
+    for key in kf:
+        current_key += 1
+    assert current_key == 25
 
 # Test and Feature to be added
 # Given array of this form[..., 30, 0, 32, ...] if iterator was at the 30th index

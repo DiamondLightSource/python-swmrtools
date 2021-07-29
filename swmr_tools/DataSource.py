@@ -1,10 +1,10 @@
-from swmr_tools.KeyFollower import Follower, FrameGrabber
+from swmr_tools.KeyFollower import Follower, FrameReader
 
 
 class DataFollower:
     """Iterator for returning dataset frames for any number of datasets. This
     class acts as a wrapper for the KeyFollower.Follower and
-    KeyFollower.FrameGrabber classes.
+    KeyFollower.FrameReader classes.
 
     Parameters
     ----------
@@ -39,11 +39,11 @@ class DataFollower:
 
     """
 
-    def __init__(self, hdf5_file, keypaths, dataset_paths, timeout=1, as_dict=False):
+    def __init__(self, hdf5_file, keypaths, dataset_paths, timeout=1):
         self.hdf5_file = hdf5_file
         self.dataset_paths = dataset_paths
         self.kf = Follower(hdf5_file, keypaths, timeout)
-        self.as_dict = as_dict
+        self.kf.check_datasets()
 
     def __iter__(self):
         return self
@@ -57,21 +57,13 @@ class DataFollower:
 
             current_dataset_index = next(self.kf)
 
-            if not self.as_dict:
-                current_dataset_slice = []
-                for path in self.dataset_paths:
-                    fg = FrameGrabber(path, self.hdf5_file)
-                    current_dataset_slice.append(fg.Grabber(current_dataset_index))
+            output = {}
 
-            else:
-                pass
+            for path in self.dataset_paths:
+                fg = FrameReader(path, self.hdf5_file, self.kf.scan_rank)
+                output[path] = fg.read_frame(current_dataset_index)
 
-            # Old method, works but a lot of code
-            # current_dataset_slice = self._get_dataset_flattened(current_dataset_index)
-
-            # New method, not currently working, gets index using np.unravel_index method
-            # current_dataset_slice = self._get_dataset_shaped(current_dataset_index)
-            return current_dataset_slice
+            return output
 
     def reset(self):
         """Reset the iterator to start again from frame 0"""
