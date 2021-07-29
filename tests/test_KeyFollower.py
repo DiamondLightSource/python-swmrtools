@@ -1,4 +1,4 @@
-from swmr_tools import Follower
+from swmr_tools import KeyFollower
 from mock import Mock
 import numpy as np
 import pytest
@@ -12,7 +12,7 @@ def test_iterates_complete_dataset():
     mds.dataset = mds.dataset + 1
 
     f = {"complete": mds}
-    kf = Follower(f, key_paths, timeout=0.1)
+    kf = KeyFollower(f, key_paths, timeout=0.1)
     kf.check_datasets()
 
     assert kf.scan_rank == 2
@@ -32,7 +32,7 @@ def test_iterates_incomplete_dataset():
 
     key_paths = ["incomplete"]
     f = {"incomplete": mds}
-    kf = Follower(f, key_paths, timeout=0.1)
+    kf = KeyFollower(f, key_paths, timeout=0.1)
     kf.check_datasets()
     current_key = 0
     for key in kf:
@@ -53,7 +53,7 @@ def test_iterates_multiple_incomplete_dataset():
             "complete": mds,
             "incomplete": mdsi
     }
-    kf = Follower(f, key_paths, timeout=0.1)
+    kf = KeyFollower(f, key_paths, timeout=0.1)
     kf.check_datasets()
     current_key = 0
     for key in kf:
@@ -70,7 +70,7 @@ def test_iterates_snake_scan():
 
     key_paths = ["incomplete"]
     f = {"incomplete": mds}
-    kf = Follower(f, key_paths, timeout=0.1)
+    kf = KeyFollower(f, key_paths, timeout=0.1)
     current_key = 0
     for key in kf:
         current_key += 1
@@ -85,7 +85,7 @@ def test_reads_updates():
 
     key_paths = ["incomplete"]
     f = {"incomplete": mds}
-    kf = Follower(f, key_paths, timeout=0.1)
+    kf = KeyFollower(f, key_paths, timeout=0.1)
     current_key = 0
     for key in kf:
         current_key += 1
@@ -104,7 +104,7 @@ def test_update_changes_shape():
 
     key_paths = ["incomplete"]
     f = {"incomplete": mds}
-    kf = Follower(f, key_paths, timeout=0.1)
+    kf = KeyFollower(f, key_paths, timeout=0.1)
     current_key = 0
     for key in kf:
         current_key += 1
@@ -131,7 +131,7 @@ def test_multiple_keys_from_node():
             "keys/a": mds,
             "keys/b":mdsi
     }
-    kf = Follower(f, key_paths, timeout=0.1)
+    kf = KeyFollower(f, key_paths, timeout=0.1)
     kf.check_datasets()
     current_key = 0
     for key in kf:

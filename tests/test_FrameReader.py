@@ -1,4 +1,4 @@
-from swmr_tools import KeyFollower
+from swmr_tools.datasource import FrameReader
 import numpy as np
 
 
@@ -8,7 +8,7 @@ def test_framereader_scalar():
     fh = {"ds": r}
     dataset = "ds"
 
-    fr = KeyFollower.FrameReader(dataset, fh, 1)
+    fr = FrameReader(dataset, fh, 1)
     
     for i in range(10):
         val = fr.read_frame(i)
@@ -24,7 +24,7 @@ def test_framereader_linear():
     fh = {"ds": r}
     dataset = "ds"
 
-    fr = KeyFollower.FrameReader(dataset, fh, 1)
+    fr = FrameReader(dataset, fh, 1)
     
     base = np.arange(10)
 
@@ -42,7 +42,7 @@ def test_framereader_image():
     fh = {"ds": r}
     dataset = "ds"
 
-    fr = KeyFollower.FrameReader(dataset, fh, 1)
+    fr = FrameReader(dataset, fh, 1)
     
     base = np.arange(200)
     base = base.reshape(10,20)
@@ -61,7 +61,7 @@ def test_framereader_image_grid():
     fh = {"ds": r}
     dataset = "ds"
 
-    fr = KeyFollower.FrameReader(dataset, fh, 2)
+    fr = FrameReader(dataset, fh, 2)
     
     base = np.arange(200)
     base = base.reshape(10,20)

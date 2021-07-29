@@ -1,6 +1,5 @@
 import numpy as np
 from swmr_tools import DataSource
-import DataSourceDatasets as Dataset
 import utils
 
 
@@ -19,7 +18,7 @@ def test_iterates_complete_dataset():
 
     data_paths = ["data/complete"]
     key_paths = ["complete"]
-    df = DataSource.DataFollower(f, key_paths, data_paths, timeout=0.1)
+    df = DataSource(f, key_paths, data_paths, timeout=0.1)
 
     val = 0
     for dset in df:

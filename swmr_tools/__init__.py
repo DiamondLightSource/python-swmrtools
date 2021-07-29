@@ -1,2 +1,2 @@
-from .KeyFollower import Follower
-from .DataSource import DataFollower
+from .keyfollower import KeyFollower
+from .datasource import DataSource
