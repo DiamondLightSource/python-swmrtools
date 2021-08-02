@@ -3,9 +3,8 @@ from swmr_tools import DataSource
 import utils
 
 
-
 def test_iterates_complete_dataset():
-    
+
     mds = utils.make_mock([10])
     mdsc = utils.make_mock([10])
     mds.dataset[...] = 1
@@ -25,5 +24,3 @@ def test_iterates_complete_dataset():
         d = dset["data/complete"]
         assert d == val
         val = val + 1
-
-
