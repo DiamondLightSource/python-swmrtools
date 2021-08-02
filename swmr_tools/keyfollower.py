@@ -1,6 +1,10 @@
 import numpy as np
 import time
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class KeyFollower:
     """Iterator for following keys datasets in nexus files
@@ -45,9 +49,7 @@ class KeyFollower:
 
     """
 
-    def __init__(
-        self, h5file, key_datasets, timeout=10, finished_dataset=None
-    ):
+    def __init__(self, h5file, key_datasets, timeout=10, finished_dataset=None):
         self.h5file = h5file
         self.current_key = -1
         self.current_max = -1
@@ -71,7 +73,7 @@ class KeyFollower:
         key_list = self._get_key_list()
 
         for k in key_list:
-            #do some exception checking here
+            # do some exception checking here
             tmp = self.h5file[k]
             r = self._get_rank(tmp.maxshape)
 
@@ -79,10 +81,14 @@ class KeyFollower:
                 rank = r
 
             if rank != -1 and rank != r:
-                pass
-                #throw exception
-        
+                raise RuntimeError("Key datasets must have the same rank!")
+
+        if self.finished_dataset is not None:
+            # just check read here
+            tmp = self.h5file[self.finished_dataset]
+
         self.scan_rank = rank
+        logger.debug("Dataset checks passed")
 
     def _get_key_list(self):
         key_list = self.key_datasets
@@ -99,9 +105,9 @@ class KeyFollower:
     def _get_rank(self, max_shape):
         rank = len(max_shape)
         rank_cor = 0
-        for i in range(len(max_shape)-1,-1,-1):
+        for i in range(len(max_shape) - 1, -1, -1):
             if max_shape[i] == 1:
-                rank_cor = rank_cor+1
+                rank_cor = rank_cor + 1
             else:
                 break
 
@@ -115,7 +121,7 @@ class KeyFollower:
 
         self._timer_reset()
         while not self._is_next():
-            time.sleep(0.2)
+            time.sleep(self.timeout / 20.0)
             if self.is_finished():
                 self._finish_tag = True
                 raise StopIteration
@@ -144,11 +150,11 @@ class KeyFollower:
         else:
             max_size = max([x.size for x in karray])
 
-            merged = np.zeros((len(karray), max_size))
+            merged = np.zeros(max_size)
             first = karray[0]
-            merged[0, : first.size] = merged[0, : first.size] + first
+            merged[: first.size] = merged[: first.size] + first
             for k in karray[1:]:
-                merged[0, : k.size] = merged[0, : k.size] * k
+                merged[: k.size] = merged[: k.size] * k
 
         new_max = np.argmax(merged == 0) - 1
         if new_max < 0:
@@ -165,12 +171,9 @@ class KeyFollower:
         for key_path in self._get_key_list():
             dataset = self.h5file[key_path]
             dataset.refresh()
+            d = dataset[...].flatten()
+            kds.append(d)
 
-            try:
-               test = dataset[...]
-               kds.append(dataset[...].flatten())
-            except Exception:
-                return None
         return kds
 
     def _timeout(self):
@@ -190,15 +193,18 @@ class KeyFollower:
         f.refresh()
         return f[0] == 1
 
-
     def is_finished(self):
         """Returns True if the KeyFollower instance has completed its iteration"""
-          
-        self._is_next()
 
-        if self.current_max == self.current_key or self._check_finished_dataset():
-            return True
-
-        else:
+        if self.current_key != self.current_max:
             return False
 
+        if self._timeout():
+            logger.debug("Finished on timeout")
+            return True
+
+        if self._check_finished_dataset():
+            logger.debug("Finished on finished dataset check")
+            return True
+
+        return False
