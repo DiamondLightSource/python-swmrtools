@@ -154,16 +154,26 @@ class KeyFollower:
             first = karray[0]
             merged[: first.size] = merged[: first.size] + first
             for k in karray[1:]:
-                merged[: k.size] = merged[: k.size] * k
+                padded = np.zeros(max_size)
+                padded[: k.size] = k
+                merged = merged * padded
 
+
+        #print(merged)
         new_max = np.argmax(merged == 0) - 1
-        if new_max < 0:
+
+        if new_max < 0 and merged[0] != 0:
+            #all keys non zero
             new_max = merged.size - 1
 
+        #print("current mx" + str(self.current_max))
+        #print("new max" + str(new_max))
         if self.current_max == new_max:
+            print("NO")
             return False
 
         self.current_max = new_max
+        print("YES")
         return True
 
     def _get_keys(self):
@@ -173,6 +183,8 @@ class KeyFollower:
             dataset.refresh()
             d = dataset[...].flatten()
             kds.append(d)
+            #print(key_path + " " + str(d.shape))
+            #print(d)
 
         return kds
 

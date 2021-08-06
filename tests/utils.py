@@ -2,12 +2,16 @@ from mock import Mock
 import numpy as np
 
 
-def make_mock(shape=[5, 10, 1, 1]):
+def make_mock(shape=[5, 10, 1, 1],maxshape=None):
 
     mds = Mock()
     mds.dataset = np.zeros(shape)
     mds.refresh = lambda: print("Refresh")
-    mds.maxshape = shape
+
+    if maxshape is None:
+        mds.maxshape = shape
+    else:
+        mds.maxshape = maxshape
     mds.shape = shape
 
     def slicemock(value):
