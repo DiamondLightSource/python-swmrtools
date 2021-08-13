@@ -61,6 +61,7 @@ class KeyFollower:
         self._check_successful = False
         self.scan_rank = -1
         self._prelim_finished_check = False
+        self.maxshape = None
 
     def __iter__(self):
         return self
@@ -83,6 +84,12 @@ class KeyFollower:
 
             if rank != -1 and rank != r:
                 raise RuntimeError("Key datasets must have the same rank!")
+
+            if (self.maxshape is None):
+                self.maxshape = tmp.maxshape[:rank]
+            else:
+                if np.all(self.maxshape != tmp.maxshape[:rank]):
+                    logger.warning("Max shape not consistent in keys")
 
         if self.finished_dataset is not None:
             # just check read here
@@ -160,22 +167,16 @@ class KeyFollower:
                 padded[: k.size] = k
                 merged = merged * padded
 
-
-        #print(merged)
         new_max = np.argmax(merged == 0) - 1
 
         if new_max < 0 and merged[0] != 0:
             #all keys non zero
             new_max = merged.size - 1
 
-        #print("current mx" + str(self.current_max))
-        #print("new max" + str(new_max))
         if self.current_max == new_max:
-            print("NO")
             return False
 
         self.current_max = new_max
-        print("YES")
         return True
 
     def _get_keys(self):
@@ -185,8 +186,6 @@ class KeyFollower:
             dataset.refresh()
             d = dataset[...].flatten()
             kds.append(d)
-            #print(key_path + " " + str(d.shape))
-            #print(d)
 
         return kds
 
@@ -215,7 +214,7 @@ class KeyFollower:
         #in case finish is flushed slightly before
         #the last of the keys
         if finished:
-            self.__prelim_finished_check = True
+            self._prelim_finished_check = True
 
         return False
 
