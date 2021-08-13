@@ -60,6 +60,8 @@ class KeyFollower:
         self._finish_tag = False
         self._check_successful = False
         self.scan_rank = -1
+        self._prelim_finished_check = False
+        self.maxshape = None
 
     def __iter__(self):
         return self
@@ -82,6 +84,12 @@ class KeyFollower:
 
             if rank != -1 and rank != r:
                 raise RuntimeError("Key datasets must have the same rank!")
+
+            if (self.maxshape is None):
+                self.maxshape = tmp.maxshape[:rank]
+            else:
+                if np.all(self.maxshape != tmp.maxshape[:rank]):
+                    logger.warning("Max shape not consistent in keys")
 
         if self.finished_dataset is not None:
             # just check read here
@@ -133,6 +141,7 @@ class KeyFollower:
         """Reset the iterator to start again from index 0"""
         self.current_key = -1
         self._finish_tag = False
+        self._prelim_finished_check = False
 
     def _timer_reset(self):
         # Hidden method, restarts timer for timeout method
@@ -154,10 +163,14 @@ class KeyFollower:
             first = karray[0]
             merged[: first.size] = merged[: first.size] + first
             for k in karray[1:]:
-                merged[: k.size] = merged[: k.size] * k
+                padded = np.zeros(max_size)
+                padded[: k.size] = k
+                merged = merged * padded
 
         new_max = np.argmax(merged == 0) - 1
-        if new_max < 0:
+
+        if new_max < 0 and merged[0] != 0:
+            #all keys non zero
             new_max = merged.size - 1
 
         if self.current_max == new_max:
@@ -191,7 +204,19 @@ class KeyFollower:
 
         f = self.h5file[self.finished_dataset]
         f.refresh()
-        return f[0] == 1
+
+        finished = f[0] == 1
+
+        if self._prelim_finished_check and finished:
+            return True
+
+        #go through the timeout loop once more
+        #in case finish is flushed slightly before
+        #the last of the keys
+        if finished:
+            self._prelim_finished_check = True
+
+        return False
 
     def is_finished(self):
         """Returns True if the KeyFollower instance has completed its iteration"""

@@ -68,6 +68,7 @@ class DataSource:
                 output[path] = fd[0]
                 if output.slice_metadata is None:
                     output.slice_metadata = fd[1]
+                    output.maxshape = self.kf.maxshape
 
             return output
 
@@ -80,6 +81,7 @@ class SliceDict(dict):
     def __init__(self, *args, **kw):
         super(SliceDict, self).__init__(*args, **kw)
         self.slice_metadata = None
+        self.maxshape = None
 
 
 class FrameReader:

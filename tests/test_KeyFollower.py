@@ -2,6 +2,115 @@ from swmr_tools import KeyFollower
 import utils
 
 
+def test_first_frame():
+
+    key_paths =  ["k1", "k2", "k3"]
+    shape=[10]
+
+
+    k1 = utils.make_mock(shape)
+    k2 = utils.make_mock(shape)
+    k3 = utils.make_mock(shape)
+
+
+    f = {"k1": k1, "k2" : k2, "k3": k3}
+    kf = KeyFollower(f, key_paths, timeout=0.1)
+    kf.check_datasets()
+
+    assert kf.scan_rank == 1
+    assert kf.maxshape == [10]
+
+    current_key = -1
+    for key in kf:
+        current_key += 1
+
+    assert current_key == -1
+
+    kf.reset()
+
+    k1.dataset[0] = 1
+    k2.dataset[0] = 1
+
+    current_key = -1
+    for key in kf:
+        current_key += 1
+
+    assert current_key == -1
+
+    kf.reset()
+    k3.dataset[0] = 1
+
+    current_key = -1
+    for key in kf:
+        current_key += 1
+
+    assert current_key == 0
+
+
+    kf.reset()
+
+    k1.dataset[1] = 1
+    k2.dataset[1] = 1
+
+    current_key = -1
+    for key in kf:
+        current_key += 1
+
+    assert current_key == 0
+
+    kf.reset()
+    k3.dataset[1] = 1
+
+    current_key = -1
+    for key in kf:
+        current_key += 1
+
+    assert current_key == 1
+
+
+def test_first_frame_jagged():
+
+    key_paths =  ["k1", "k2", "k3"]
+
+    k1 = utils.make_mock([2])
+    k2 = utils.make_mock([2])
+    k3 = utils.make_mock([1],maxshape=[2])
+
+
+    f = {"k1": k1, "k2" : k2, "k3": k3}
+    kf = KeyFollower(f, key_paths, timeout=0.1)
+    kf.check_datasets()
+
+    assert kf.maxshape == [2]
+
+    assert kf.scan_rank == 1
+
+    current_key = -1
+    for key in kf:
+        current_key += 1
+
+    assert current_key == -1
+
+    kf.reset()
+
+    k1.dataset[0] = 1
+    k2.dataset[0] = 1
+
+    current_key = -1
+    for key in kf:
+        current_key += 1
+
+    assert current_key == -1
+
+    kf.reset()
+    k3.dataset[0] = 1
+
+    current_key = -1
+    for key in kf:
+        current_key += 1
+
+    assert current_key == 0
+
 def test_iterates_complete_dataset():
 
     key_paths = ["complete"]
@@ -14,7 +123,7 @@ def test_iterates_complete_dataset():
     kf.check_datasets()
 
     assert kf.scan_rank == 2
-
+    assert kf.maxshape == [5, 10]
     current_key = 0
     for key in kf:
         current_key += 1
