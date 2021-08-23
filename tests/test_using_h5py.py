@@ -86,7 +86,6 @@ def test_use_case_example(tmp_path):
         key_paths = ["/key"]
         df = DataSource(fh, key_paths, data_paths, timeout=1)
 
-
         output = None
 
         for dset in df:
@@ -96,20 +95,9 @@ def test_use_case_example(tmp_path):
             assert dset.maxshape == (2,3)
 
             if output is None:
-                maxshape = dset.maxshape + r.shape
-                shape = ([1] * len(dset.maxshape) + list(r.shape))
-                r = r.reshape(shape)
-                output = oh.create_dataset(output_path, data=r, maxshape = maxshape)
+                output = df.create_dataset(r,oh,output_path)
             else:
-                s = dset.slice_metadata
-                ds = tuple(slice(0,s,1) for s in r.shape)
-                fullslice = s + ds
-                new_shape = tuple(s.stop for s in fullslice)
-                if (np.any(new_shape > output.shape)):
-                    output.resize(new_shape)
-                output[fullslice] = r
-
-
+                df.append_data(r,dset.slice_metadata,output)
 
     with h5py.File(o, "r") as oh:
         out = oh["/result"]

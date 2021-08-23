@@ -76,6 +76,23 @@ class DataSource:
         """Reset the iterator to start again from frame 0"""
         self.kf.reset()
 
+    def create_dataset(self, data, fh, path):
+ 
+        scan_max = self.kf.maxshape
+        maxshape = scan_max + data.shape
+        shape = ([1] * len(scan_max) + list(data.shape))
+        r = data.reshape(shape)
+        return fh.create_dataset(path, data=r, maxshape = maxshape)
+
+    def append_data(self, data, slice_metadata, dataset):
+
+        ds = tuple(slice(0,s,1) for s in data.shape)
+        fullslice = slice_metadata + ds
+        new_shape = tuple(s.stop for s in fullslice)
+        if (np.any(new_shape > dataset.shape)):
+            dataset.resize(new_shape)
+        dataset[fullslice] = data
+
 
 class SliceDict(dict):
     def __init__(self, *args, **kw):
