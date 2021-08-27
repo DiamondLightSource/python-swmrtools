@@ -162,6 +162,25 @@ class FrameReader:
 
         ds = self.h5file[self.dataset]
         shape = ds.shape
+        
+        try:
+            #might fail if dataset is cached
+            pos, slices, shape_slice = self.get_pos(index, shape)
+        except ValueError:
+            #refresh dataset and try again
+            if hasattr(ds, "refresh"):
+                ds.refresh()
+
+            shape = ds.shape
+            pos, slices, shape_slice = self.get_pos(index, shape)
+
+        for i in range(len(pos)):
+            slices[i] = slice(pos[i], pos[i] + 1)
+        frame = ds[tuple(slices)]
+        return frame, tuple(slices[shape_slice])
+
+    def get_pos(self, index, shape):
+
         rank = len(shape)
         slices = [slice(0, None, 1)] * rank
 
@@ -169,10 +188,9 @@ class FrameReader:
             shape_slice = slice(0, None, 1)
         else:
             shape_slice = slice(0, self.scan_rank, 1)
-
+        
         scan_shape = shape[shape_slice]
         pos = np.unravel_index(index, scan_shape)
-        for i in range(len(pos)):
-            slices[i] = slice(pos[i], pos[i] + 1)
-        frame = ds[tuple(slices)]
-        return frame, tuple(slices[shape_slice])
+
+        return pos, slices, shape_slice
+
