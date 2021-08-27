@@ -76,6 +76,23 @@ class DataSource:
         """Reset the iterator to start again from frame 0"""
         self.kf.reset()
 
+    def create_dataset(self, data, fh, path):
+ 
+        scan_max = self.kf.maxshape
+        maxshape = scan_max + data.shape
+        shape = ([1] * len(scan_max) + list(data.shape))
+        r = data.reshape(shape)
+        return fh.create_dataset(path, data=r, maxshape = maxshape)
+
+    def append_data(self, data, slice_metadata, dataset):
+
+        ds = tuple(slice(0,s,1) for s in data.shape)
+        fullslice = slice_metadata + ds
+        new_shape = tuple(s.stop for s in fullslice)
+        if (np.any(new_shape > dataset.shape)):
+            dataset.resize(new_shape)
+        dataset[fullslice] = data
+
 
 class SliceDict(dict):
     def __init__(self, *args, **kw):
@@ -145,6 +162,25 @@ class FrameReader:
 
         ds = self.h5file[self.dataset]
         shape = ds.shape
+        
+        try:
+            #might fail if dataset is cached
+            pos, slices, shape_slice = self.get_pos(index, shape)
+        except ValueError:
+            #refresh dataset and try again
+            if hasattr(ds, "refresh"):
+                ds.refresh()
+
+            shape = ds.shape
+            pos, slices, shape_slice = self.get_pos(index, shape)
+
+        for i in range(len(pos)):
+            slices[i] = slice(pos[i], pos[i] + 1)
+        frame = ds[tuple(slices)]
+        return frame, tuple(slices[shape_slice])
+
+    def get_pos(self, index, shape):
+
         rank = len(shape)
         slices = [slice(0, None, 1)] * rank
 
@@ -152,10 +188,9 @@ class FrameReader:
             shape_slice = slice(0, None, 1)
         else:
             shape_slice = slice(0, self.scan_rank, 1)
-
+        
         scan_shape = shape[shape_slice]
         pos = np.unravel_index(index, scan_shape)
-        for i in range(len(pos)):
-            slices[i] = slice(pos[i], pos[i] + 1)
-        frame = ds[tuple(slices)]
-        return frame, tuple(slices[shape_slice])
+
+        return pos, slices, shape_slice
+

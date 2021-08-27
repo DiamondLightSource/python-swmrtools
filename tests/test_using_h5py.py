@@ -1,5 +1,8 @@
 import h5py
 import numpy as np
+import time
+import os
+import multiprocessing as mp
 from swmr_tools import KeyFollower, DataSource
 from functools import reduce
 
@@ -86,7 +89,6 @@ def test_use_case_example(tmp_path):
         key_paths = ["/key"]
         df = DataSource(fh, key_paths, data_paths, timeout=1)
 
-
         output = None
 
         for dset in df:
@@ -96,20 +98,9 @@ def test_use_case_example(tmp_path):
             assert dset.maxshape == (2,3)
 
             if output is None:
-                maxshape = dset.maxshape + r.shape
-                shape = ([1] * len(dset.maxshape) + list(r.shape))
-                r = r.reshape(shape)
-                output = oh.create_dataset(output_path, data=r, maxshape = maxshape)
+                output = df.create_dataset(r,oh,output_path)
             else:
-                s = dset.slice_metadata
-                ds = tuple(slice(0,s,1) for s in r.shape)
-                fullslice = s + ds
-                new_shape = tuple(s.stop for s in fullslice)
-                if (np.any(new_shape > output.shape)):
-                    output.resize(new_shape)
-                output[fullslice] = r
-
-
+                df.append_data(r,dset.slice_metadata,output)
 
     with h5py.File(o, "r") as oh:
         out = oh["/result"]
@@ -118,6 +109,31 @@ def test_use_case_example(tmp_path):
         print(out[1,2,:])
         assert 119+118+117+116+115 == out[1,2,3]
 
+def test_mock_scan(tmp_path):
+    f = str(tmp_path / "scan.h5")
+
+    mp.set_start_method('spawn')
+    p = mp.Process(target=mock_scan, args = (f,))
+    p.start()
+    
+    while not os.path.exists(f):
+        time.sleep(1)
+
+    with h5py.File(f, "r", libver = "latest", swmr = True) as fh:
+
+        data_paths = ["/data"]
+        key_paths = ["/key"]
+        df = DataSource(fh, key_paths, data_paths, timeout=1)
+    
+        count = 1
+
+        assert p.is_alive()
+        for dset in df:
+            d = dset["/data"]
+            assert d[0,0,0].item() == count
+            count = count + 1
+    
+    p.join()
 
 def create_test_file(path):
 
@@ -130,4 +146,28 @@ def create_test_file(path):
         k = np.ones(shape[:-2])
         fh.create_dataset("key", data=k, maxshape=shape[:-2])
 
+
+def mock_scan(path):
+
+    with h5py.File(path, "w", libver = "latest") as fh:
+        maxshape = (10, 9, 10)
+        shape = (1, 9, 10) 
+        
+        d = np.zeros(shape)
+
+        ds = fh.create_dataset("data", data=d, maxshape=maxshape)
+        k = np.zeros((1,))
+        ks = fh.create_dataset("key", data=k, maxshape=(20,))
+        fh.swmr_mode = True
+        for i in range(20):
+            s = (i+1, 9, 10)
+            if i != 0:
+                ds.resize(s)
+                ks.resize((i+1,))
+            ds[i,:,:] = np.ones(shape) + i
+            ds.flush()
+            ks[i] = 1
+            ks.flush()
+            print("flush " + str(i))
+            time.sleep(1) 
 
