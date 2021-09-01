@@ -11,10 +11,7 @@ swmr_tools
    :caption: Contents:
    
    getting_started
-   keyfollower
    datasource
-   performance_enhancements_with_dask
+   keyfollower
    modules 
-
-
 

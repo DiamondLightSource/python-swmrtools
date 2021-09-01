@@ -15,9 +15,8 @@ class DataSource:
         to follow.
 
     keypaths: list
-        A list of paths (as strings) to groups in h5file containing unique
-        key datasets. (Note: paths must be to the group containing the dataset
-                       and not full paths to the dataset itself)
+        A list of paths (as strings) to key datasets in the hdf5 file. Can also be
+        the path to groups, but the groups must contain only key datasets
 
     dataset_paths: list
         A list of paths (as strings) to datasets in h5file that you wish
@@ -29,12 +28,17 @@ class DataSource:
         termination condition is trigerred and iteration is halted. If a value
         is not set this will default to 10 seconds.
 
+    finished_dataset: string (optional)
+        Path to a scalar hdf5 dataset which is zero when the file is being
+        written to and non-zero when the file is complete. Used to stop 
+        the iterator without waiting for the timeout
+
 
     Examples
     --------
 
     >>> with h5py.File("/home/documents/work/data/example.h5", "r", swmr = True) as f:
-    >>>     df = DataSource(f, path_to_key_group, path_to_datasets, timeout = 1)
+    >>>     df = DataSource(f, path_to_key_group, path_to_datasets)
     >>>     for frame_dict in df:
     >>>         print(frame_dict)
 
