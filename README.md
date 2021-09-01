@@ -1,10 +1,16 @@
 # swmr_tools
 
-swmr_tools is a Python library developed by Diamond Light Source Ltd designed to facilitate reading and processing data from NeXus files as they are being written
+swmr_tools is a Python library developed by Diamond Light Source Ltd designed to facilitate reading and processing data from HDF5 swmr files as they are being written.
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install swmr_tools
+swmr_tools can be installed using either conda [(from the conda-forge channel)](https://anaconda.org/conda-forge/swmr-tools):
+
+```bash
+conda install -c conda-forge swmr-tools
+```
+
+or the package manager [pip](https://pip.pypa.io/en/stable/):
 
 ```bash
 pip install swmr_tools
