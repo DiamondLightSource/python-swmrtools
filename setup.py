@@ -10,7 +10,7 @@ setup(
     author_email="scientificsoftware@diamond.ac.uk",
     url="https://github.com/DiamondLightSource/python-swmrtools",
     keywords=["HDF5", "Iterator", "Diamond"],
-    install_requires=["h5py", "numpy"],
+    install_requires=["numpy"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
