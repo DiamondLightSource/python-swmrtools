@@ -15,18 +15,19 @@ class KeyFollower:
         Instance of h5py.File object. Choose the file containing data you wish
         to follow.
 
-    key_datasets: list
-        A list of paths (as strings) to groups in h5file containing unique
-        key datasets.
+    keypaths: list
+        A list of paths (as strings) to key datasets in the hdf5 file. Can also be
+        the path to groups, but the groups must contain only key datasets
 
     timeout: int (optional)
         The maximum time allowed for a dataset to update before the timeout
         termination condition is trigerred and iteration is halted. If a value
         is not set this will default to 10 seconds.
 
-    termination_conditions: list (optional)
-        A list of strings containing conditions for stopping iteration. Set as
-        timeout by default.
+    finished_dataset: string (optional)
+        Path to a scalar hdf5 dataset which is zero when the file is being
+        written to and non-zero when the file is complete. Used to stop 
+        the iterator without waiting for the timeout
 
 
 
@@ -36,12 +37,12 @@ class KeyFollower:
 
     >>> # open hdf5 file using context manager with swmr mode activated
     >>> with h5py.File("/home/documents/work/data/example.h5", "r", swmr = True) as f:
-    >>> # create an instance of the Follower object to iterate through
-    >>>     kf = Follower(f,
-    >>>                   ['path/to/key/group/one', 'path/to/key/group/two'],
-    >>>                   timeout = 1,
-    >>>                   termination_conditions = ['timeout'])
-    >>> # iterate through the iterator as with a standard iterator/generator object
+    >>>     # create an instance of the Follower object to iterate through
+    >>>     kf = KeyFollower(f,
+    >>>                   ['/path/to/key/one', '/path/to/key/two'],
+    >>>                   timeout = 10,
+    >>>                   finished_dataset = "/path/to/finished")
+    >>>     # iterate through the iterator as with a standard iterator/generator object
     >>>     for key in kf:
     >>>         print(key)
 
@@ -49,13 +50,13 @@ class KeyFollower:
 
     """
 
-    def __init__(self, h5file, key_datasets, timeout=10, finished_dataset=None):
+    def __init__(self, h5file, keypaths, timeout=10, finished_dataset=None):
         self.h5file = h5file
         self.current_key = -1
         self.current_max = -1
         self.timeout = timeout
         self.start_time = None
-        self.key_datasets = key_datasets
+        self.key_datasets = keypaths
         self.finished_dataset = finished_dataset
         self._finish_tag = False
         self._check_successful = False
