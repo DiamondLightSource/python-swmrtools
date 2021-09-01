@@ -34,10 +34,9 @@ jobs:
         echo $GITHUB_REF
         python -m pip install --upgrade pip
         pip install flake8 pytest pytest-cov
-        pip install numpy
-        pip install h5py
         pip install build
         pip install mock
+        pip install h5py
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
