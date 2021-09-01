@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class KeyFollower:
-    """Iterator for following keys datasets in nexus files
+    """Iterator for following key datasets in hdf5 files
 
     Parameters
     ----------
