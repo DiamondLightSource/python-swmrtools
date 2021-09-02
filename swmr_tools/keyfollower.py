@@ -26,7 +26,7 @@ class KeyFollower:
 
     finished_dataset: string (optional)
         Path to a scalar hdf5 dataset which is zero when the file is being
-        written to and non-zero when the file is complete. Used to stop 
+        written to and non-zero when the file is complete. Used to stop
         the iterator without waiting for the timeout
 
 
@@ -86,7 +86,7 @@ class KeyFollower:
             if rank != -1 and rank != r:
                 raise RuntimeError("Key datasets must have the same rank!")
 
-            if (self.maxshape is None):
+            if self.maxshape is None:
                 self.maxshape = tmp.maxshape[:rank]
             else:
                 if np.all(self.maxshape != tmp.maxshape[:rank]):
@@ -171,7 +171,7 @@ class KeyFollower:
         new_max = np.argmax(merged == 0) - 1
 
         if new_max < 0 and merged[0] != 0:
-            #all keys non zero
+            # all keys non zero
             new_max = merged.size - 1
 
         if self.current_max == new_max:
@@ -211,9 +211,9 @@ class KeyFollower:
         if self._prelim_finished_check and finished:
             return True
 
-        #go through the timeout loop once more
-        #in case finish is flushed slightly before
-        #the last of the keys
+        # go through the timeout loop once more
+        # in case finish is flushed slightly before
+        # the last of the keys
         if finished:
             self._prelim_finished_check = True
 

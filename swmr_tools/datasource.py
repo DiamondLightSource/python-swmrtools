@@ -6,6 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class DataSource:
     """Iterator for returning dataset frames for any number of datasets. This
     class is largely a wrapper around the KeyFollower and FrameReader classes.
@@ -87,45 +88,42 @@ class DataSource:
 
         scan_max = self.kf.maxshape
         maxshape = scan_max + data.shape
-        shape = ([1] * len(scan_max) + list(data.shape))
+        shape = [1] * len(scan_max) + list(data.shape)
         r = data.reshape(shape)
-        return fh.create_dataset(path, data=r, maxshape = maxshape)
+        return fh.create_dataset(path, data=r, maxshape=maxshape)
 
     def append_data(self, data, slice_metadata, dataset):
-        ds = tuple(slice(0,s,1) for s in data.shape)
+        ds = tuple(slice(0, s, 1) for s in data.shape)
         fullslice = slice_metadata + ds
         current = dataset.shape
-        new_shape = tuple(max(s.stop,c) for (s,c) in zip(fullslice,current))
-        if (np.any(new_shape > current)):
+        new_shape = tuple(max(s.stop, c) for (s, c) in zip(fullslice, current))
+        if np.any(new_shape > current):
             dataset.resize(new_shape)
         dataset[fullslice] = data
 
     @staticmethod
-    def check_file_readable(path, datasets,timeout = 10, retrys = 5):
+    def check_file_readable(path, datasets, timeout=10, retrys=5):
         start = time.time()
         dif = time.time() - start
 
         while dif < timeout:
             try:
-                with h5py.File(path,'r',libver = "latest", swmr = True) as fh:
+                with h5py.File(path, "r", libver="latest", swmr=True) as fh:
                     for d in datasets:
-                        tmp = fh[d]
+                        fh[d]
                     return True
 
             except Exception as e:
                 logger.debug("Reading failed, retrying " + str(e))
-                time.sleep(timeout/retrys)
+                time.sleep(timeout / retrys)
                 dif = time.time() - start
 
         logger.error("Could not read file " + path)
         return False
 
 
-
-
 class SliceDict(dict):
-    """Dictionary with attributes for the slice metadata and maxshape of the scan
-    """
+    """Dictionary with attributes for the slice metadata and maxshape of the scan"""
 
     def __init__(self, *args, **kw):
         super(SliceDict, self).__init__(*args, **kw)
@@ -203,10 +201,10 @@ class FrameReader:
         shape = ds.shape
 
         try:
-            #might fail if dataset is cached
+            # might fail if dataset is cached
             pos, slices, shape_slice = self.get_pos(index, shape)
         except ValueError:
-            #refresh dataset and try again
+            # refresh dataset and try again
             if hasattr(ds, "refresh"):
                 ds.refresh()
 
@@ -232,4 +230,3 @@ class FrameReader:
         pos = np.unravel_index(index, scan_shape)
 
         return pos, slices, shape_slice
-
