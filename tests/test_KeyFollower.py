@@ -4,16 +4,14 @@ import utils
 
 def test_first_frame():
 
-    key_paths =  ["k1", "k2", "k3"]
-    shape=[10]
-
+    key_paths = ["k1", "k2", "k3"]
+    shape = [10]
 
     k1 = utils.make_mock(shape)
     k2 = utils.make_mock(shape)
     k3 = utils.make_mock(shape)
 
-
-    f = {"k1": k1, "k2" : k2, "k3": k3}
+    f = {"k1": k1, "k2": k2, "k3": k3}
     kf = KeyFollower(f, key_paths, timeout=0.1)
     kf.check_datasets()
 
@@ -46,7 +44,6 @@ def test_first_frame():
 
     assert current_key == 0
 
-
     kf.reset()
 
     k1.dataset[1] = 1
@@ -70,14 +67,13 @@ def test_first_frame():
 
 def test_first_frame_jagged():
 
-    key_paths =  ["k1", "k2", "k3"]
+    key_paths = ["k1", "k2", "k3"]
 
     k1 = utils.make_mock([2])
     k2 = utils.make_mock([2])
-    k3 = utils.make_mock([1],maxshape=[2])
+    k3 = utils.make_mock([1], maxshape=[2])
 
-
-    f = {"k1": k1, "k2" : k2, "k3": k3}
+    f = {"k1": k1, "k2": k2, "k3": k3}
     kf = KeyFollower(f, key_paths, timeout=0.1)
     kf.check_datasets()
 
@@ -110,6 +106,7 @@ def test_first_frame_jagged():
         current_key += 1
 
     assert current_key == 0
+
 
 def test_iterates_complete_dataset():
 

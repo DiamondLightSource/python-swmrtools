@@ -1,7 +1,6 @@
 import h5py
 import numpy as np
 import time
-import os
 import multiprocessing as mp
 from swmr_tools import KeyFollower, DataSource
 from functools import reduce
@@ -31,6 +30,7 @@ def test_multiple_keys(tmp_path):
 
         assert current_key == 5
 
+
 def test_complete_keys(tmp_path):
 
     f = str(tmp_path / "f.h5")
@@ -54,6 +54,7 @@ def test_complete_keys(tmp_path):
 
         assert current_key == 10
 
+
 def test_data_read(tmp_path):
 
     f = str(tmp_path / "f.h5")
@@ -73,6 +74,7 @@ def test_data_read(tmp_path):
             d = dset["/data"]
             assert np.all(d == base + (20 * count))
             count = count + 1
+
 
 def test_use_case_example(tmp_path):
 
@@ -94,32 +96,33 @@ def test_use_case_example(tmp_path):
         for dset in df:
             d = dset["/data"]
             d = d.squeeze()
-            r = d.sum(axis = 1)
-            assert dset.maxshape == (2,3)
+            r = d.sum(axis=1)
+            assert dset.maxshape == (2, 3)
 
             if output is None:
-                output = df.create_dataset(r,oh,output_path)
+                output = df.create_dataset(r, oh, output_path)
             else:
-                df.append_data(r,dset.slice_metadata,output)
+                df.append_data(r, dset.slice_metadata, output)
 
     with h5py.File(o, "r") as oh:
         out = oh["/result"]
-        assert out.shape == (2,3,4)
-        assert out.maxshape == (2,3,4)
+        assert out.shape == (2, 3, 4)
+        assert out.maxshape == (2, 3, 4)
         print(out[...])
-        assert 119+118+117+116+115 == out[1,2,3]
-        assert out[0,1,0] != 0
+        assert 119 + 118 + 117 + 116 + 115 == out[1, 2, 3]
+        assert out[0, 1, 0] != 0
+
 
 def test_mock_scan(tmp_path):
     f = str(tmp_path / "scan.h5")
 
-    mp.set_start_method('spawn')
-    p = mp.Process(target=mock_scan, args = (f,))
+    mp.set_start_method("spawn")
+    p = mp.Process(target=mock_scan, args=(f,))
     p.start()
 
-    DataSource.check_file_readable(f, ["/data","/key"], timeout = 5)
+    DataSource.check_file_readable(f, ["/data", "/key"], timeout=5)
 
-    with h5py.File(f, "r", libver = "latest", swmr = True) as fh:
+    with h5py.File(f, "r", libver="latest", swmr=True) as fh:
 
         data_paths = ["/data"]
         key_paths = ["/key"]
@@ -130,10 +133,11 @@ def test_mock_scan(tmp_path):
         assert p.is_alive()
         for dset in df:
             d = dset["/data"]
-            assert d[0,0,0].item() == count
+            assert d[0, 0, 0].item() == count
             count = count + 1
 
     p.join()
+
 
 def create_test_file(path):
 
@@ -149,7 +153,7 @@ def create_test_file(path):
 
 def mock_scan(path):
 
-    with h5py.File(path, "w", libver = "latest") as fh:
+    with h5py.File(path, "w", libver="latest") as fh:
         maxn = 10
         maxshape = (maxn, 9, 10)
         shape = (1, 9, 10)
@@ -161,14 +165,13 @@ def mock_scan(path):
         ks = fh.create_dataset("key", data=k, maxshape=(20,))
         fh.swmr_mode = True
         for i in range(maxn):
-            s = (i+1, 9, 10)
+            s = (i + 1, 9, 10)
             if i != 0:
                 ds.resize(s)
-                ks.resize((i+1,))
-            ds[i,:,:] = np.ones(shape) + i
+                ks.resize((i + 1,))
+            ds[i, :, :] = np.ones(shape) + i
             ds.flush()
             ks[i] = 1
             ks.flush()
             print("flush " + str(i))
             time.sleep(1)
-

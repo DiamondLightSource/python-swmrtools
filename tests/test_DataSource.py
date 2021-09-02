@@ -24,8 +24,7 @@ def test_iterates_complete_dataset():
         d = dset["data/complete"]
         assert dset.maxshape == [10]
         assert dset.index == val
-        assert dset.slice_metadata == (slice(val,val+1,None),)
+        assert dset.slice_metadata == (slice(val, val + 1, None),)
         print(dset.slice_metadata)
         assert d == val
         val = val + 1
-
