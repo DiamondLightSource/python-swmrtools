@@ -94,7 +94,7 @@ def test_use_case_example(tmp_path):
         for dset in df:
             d = dset["/data"]
             d = d.squeeze()
-            r = d.sum(axis=1)
+            r = d.sum(axis = 1)
             assert dset.maxshape == (2,3)
 
             if output is None:
@@ -106,8 +106,9 @@ def test_use_case_example(tmp_path):
         out = oh["/result"]
         assert out.shape == (2,3,4)
         assert out.maxshape == (2,3,4)
-        print(out[1,2,:])
+        print(out[...])
         assert 119+118+117+116+115 == out[1,2,3]
+        assert out[0,1,0] != 0
 
 def test_mock_scan(tmp_path):
     f = str(tmp_path / "scan.h5")

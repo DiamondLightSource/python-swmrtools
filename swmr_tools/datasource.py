@@ -92,11 +92,11 @@ class DataSource:
         return fh.create_dataset(path, data=r, maxshape = maxshape)
 
     def append_data(self, data, slice_metadata, dataset):
-
         ds = tuple(slice(0,s,1) for s in data.shape)
         fullslice = slice_metadata + ds
-        new_shape = tuple(s.stop for s in fullslice)
-        if (np.any(new_shape > dataset.shape)):
+        current = dataset.shape
+        new_shape = tuple(max(s.stop,c) for (s,c) in zip(fullslice,current))
+        if (np.any(new_shape > current)):
             dataset.resize(new_shape)
         dataset[fullslice] = data
 
