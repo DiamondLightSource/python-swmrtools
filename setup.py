@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name="swmr_tools",
     packages=["swmr_tools"],
-    version="0.4.0",
+    version="0.5.0",
     license="MIT",
     description="Python iterator for safely monitoring NeXus files",
     author="Diamond Light Source Ltd",
