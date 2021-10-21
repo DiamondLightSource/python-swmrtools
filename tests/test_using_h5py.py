@@ -56,6 +56,14 @@ def test_complete_keys(tmp_path):
 
 
 def test_data_read(tmp_path):
+    inner_data_read(tmp_path, False)
+
+
+def test_data_read_cache(tmp_path):
+    inner_data_read(tmp_path, True)
+
+
+def inner_data_read(tmp_path, cache):
 
     f = str(tmp_path / "f.h5")
 
@@ -65,7 +73,7 @@ def test_data_read(tmp_path):
 
         data_paths = ["/data"]
         key_paths = ["/key"]
-        df = DataSource(fh, key_paths, data_paths, timeout=1)
+        df = DataSource(fh, key_paths, data_paths, timeout=1, cache_datasets=cache)
 
         count = 0
         base = np.arange(4 * 5)
@@ -74,7 +82,6 @@ def test_data_read(tmp_path):
             d = dset["/data"]
             assert np.all(d == base + (20 * count))
             count = count + 1
-
 
 def test_use_case_example(tmp_path):
 

@@ -48,12 +48,17 @@ class DataSource:
     """
 
     def __init__(
-        self, h5file, keypaths, dataset_paths, timeout=10, finished_dataset=None
+        self, h5file, keypaths, dataset_paths, timeout=10, finished_dataset=None, cache_datasets=False
     ):
         self.h5file = h5file
         self.dataset_paths = dataset_paths
+        self.cache = {}
         self.kf = KeyFollower(h5file, keypaths, timeout, finished_dataset)
         self.kf.check_datasets()
+        if cache_datasets:
+            for path in self.dataset_paths:
+                self.cache[path] = FrameReader(path, self.h5file, self.kf.scan_rank,cache_dataset = True)
+
 
     def __iter__(self):
         return self
@@ -70,7 +75,9 @@ class DataSource:
             output = SliceDict()
 
             for path in self.dataset_paths:
-                fg = FrameReader(path, self.h5file, self.kf.scan_rank)
+                #If caching requested use from cache
+                #else create
+                fg = self.cache.get(path, FrameReader(path, self.h5file, self.kf.scan_rank))
                 fd = fg.read_frame(current_dataset_index)
                 output[path] = fd[0]
                 if output.slice_metadata is None:
@@ -162,13 +169,12 @@ class FrameReader:
 
     """
 
-    def __init__(self, dataset, h5file, scan_rank):
+    def __init__(self, dataset, h5file, scan_rank, cache_dataset = False):
         self.dataset = dataset
         self.h5file = h5file
         self.scan_rank = scan_rank
 
-        ds = self.h5file[self.dataset]
-        assert len(ds.shape) >= self.scan_rank
+        self.ds = self.h5file[self.dataset] if cache_dataset else None
 
     def read_frame(self, index):
         """Method for using an index from KeyFollower to extract that frame
@@ -197,7 +203,7 @@ class FrameReader:
         >>>         frame_list.append(frame)
         """
 
-        ds = self.h5file[self.dataset]
+        ds = self.ds if self.ds is not None else self.h5file[self.dataset]
         shape = ds.shape
 
         try:
