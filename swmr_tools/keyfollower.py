@@ -87,6 +87,7 @@ class KeyFollower:
                 raise RuntimeError("Key datasets must have the same rank!")
 
             if self.maxshape is None:
+                print(tmp.maxshape)
                 self.maxshape = tmp.maxshape[:rank]
             else:
                 if np.all(self.maxshape != tmp.maxshape[:rank]):
@@ -101,7 +102,7 @@ class KeyFollower:
 
     def _get_key_list(self):
         key_list = self.key_datasets
-
+        print(key_list[0])
         if len(key_list) == 1 and not hasattr(self.h5file[key_list[0]], "shape"):
             k0 = key_list[0]
             ks = []
@@ -234,3 +235,44 @@ class KeyFollower:
             return True
 
         return False
+
+
+class RowKeyFollower:
+
+    def __init__(self, h5file, keypaths, timeout=10, finished_dataset=None, row_size=None):
+        self.inner_key_follower = KeyFollower(h5file, keypaths, timeout=timeout, finished_dataset=finished_dataset)
+        self.row_size = row_size
+        self.scan_rank = -1
+        self.maxshape = None
+        self._row_count = -1
+
+
+    def __iter__(self):
+        return self
+
+    def check_datasets(self):
+
+        self.inner_key_follower.check_datasets()
+        self.scan_rank = self.inner_key_follower.scan_rank
+        self.maxshape = self.inner_key_follower.maxshape
+
+        if self.row_size is None:
+            print(self.inner_key_follower.maxshape)
+            rsize = self.inner_key_follower.maxshape[-1]
+            if rsize == None:
+                raise RuntimeError("Row size must be defined if fastest max shape dimension is -1")
+
+            self.row_size = rsize
+
+    def __next__(self):
+
+        for i in range(self.row_size -1):
+            next(self.inner_key_follower)
+
+        return next(self.inner_key_follower)
+
+
+    def reset(self):
+        """Reset the iterator to start again from index 0"""
+        self._row_count = -1
+        self.inner_key_follower.reset()

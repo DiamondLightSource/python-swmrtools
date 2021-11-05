@@ -3,9 +3,9 @@ import numpy as np
 import h5py
 import time
 import logging
+from .utils import get_position, create_dataset, append_data
 
 logger = logging.getLogger(__name__)
-
 
 class DataSource:
     """Iterator for returning dataset frames for any number of datasets. This
@@ -92,41 +92,11 @@ class DataSource:
         self.kf.reset()
 
     def create_dataset(self, data, fh, path):
-
         scan_max = self.kf.maxshape
-        maxshape = scan_max + data.shape
-        shape = [1] * len(scan_max) + list(data.shape)
-        r = data.reshape(shape)
-        return fh.create_dataset(path, data=r, maxshape=maxshape)
+        return create_dataset(data, scan_max, fh, path)
 
     def append_data(self, data, slice_metadata, dataset):
-        ds = tuple(slice(0, s, 1) for s in data.shape)
-        fullslice = slice_metadata + ds
-        current = dataset.shape
-        new_shape = tuple(max(s.stop, c) for (s, c) in zip(fullslice, current))
-        if np.any(new_shape > current):
-            dataset.resize(new_shape)
-        dataset[fullslice] = data
-
-    @staticmethod
-    def check_file_readable(path, datasets, timeout=10, retrys=5):
-        start = time.time()
-        dif = time.time() - start
-
-        while dif < timeout:
-            try:
-                with h5py.File(path, "r", libver="latest", swmr=True) as fh:
-                    for d in datasets:
-                        fh[d]
-                    return True
-
-            except Exception as e:
-                logger.debug("Reading failed, retrying " + str(e))
-                time.sleep(timeout / retrys)
-                dif = time.time() - start
-
-        logger.error("Could not read file " + path)
-        return False
+        return append_data(data,slice_metadata, dataset)
 
 
 class SliceDict(dict):
@@ -223,16 +193,5 @@ class FrameReader:
         return frame, tuple(slices[shape_slice])
 
     def get_pos(self, index, shape):
+        return get_position(index, shape, self.scan_rank)
 
-        rank = len(shape)
-        slices = [slice(0, None, 1)] * rank
-
-        if self.scan_rank == rank:
-            shape_slice = slice(0, None, 1)
-        else:
-            shape_slice = slice(0, self.scan_rank, 1)
-
-        scan_shape = shape[shape_slice]
-        pos = np.unravel_index(index, scan_shape)
-
-        return pos, slices, shape_slice
