@@ -33,6 +33,7 @@ class DataSource:
         is not set this will default to 10 seconds.
 
     finished_dataset: string (optional)
+
         Path to a scalar hdf5 dataset which is zero when the file is being
         written to and non-zero when the file is complete. Used to stop
         the iterator without waiting for the timeout
@@ -178,19 +179,22 @@ class FrameReader:
 
         try:
             # might fail if dataset is cached
-            pos, slices, shape_slice = self.get_pos(index, shape)
+            pos  = self.get_pos(index, shape)
         except ValueError:
             # refresh dataset and try again
             if hasattr(ds, "refresh"):
                 ds.refresh()
 
             shape = ds.shape
-            pos, slices, shape_slice = self.get_pos(index, shape)
+            pos = self.get_pos(index, shape)
+
+        rank = len(shape)
+        slices = [slice(0,None,1)]*rank
 
         for i in range(len(pos)):
             slices[i] = slice(pos[i], pos[i] + 1)
         frame = ds[tuple(slices)]
-        return frame, tuple(slices[shape_slice])
+        return frame, tuple(slices[:self.scan_rank])
 
     def get_pos(self, index, shape):
         return get_position(index, shape, self.scan_rank)
