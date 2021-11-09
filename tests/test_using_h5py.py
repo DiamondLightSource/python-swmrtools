@@ -83,6 +83,7 @@ def inner_data_read(tmp_path, cache):
             assert np.all(d == base + (20 * count))
             count = count + 1
 
+
 def test_use_case_example(tmp_path):
 
     f = str(tmp_path / "f.h5")

@@ -5,8 +5,9 @@ import time
 
 logger = logging.getLogger(__name__)
 
+
 def get_position(index, shape, scan_rank):
-    '''
+    """
     Returns the position in the scan associated with the given index
 
             Parameters:
@@ -23,16 +24,17 @@ def get_position(index, shape, scan_rank):
     >>> utils.get_position(0, [3,4,5], 2)
     (0,0)
 
-    '''
+    """
 
     scan_shape = shape[:scan_rank]
     pos = np.unravel_index(index, scan_shape)
 
     return pos
 
+
 def get_row_slice(index, shape, scan_rank):
 
-    '''
+    """
     Returns a slice tuple corresponding to the row of the shape that contains the index
 
             Parameters:
@@ -49,21 +51,22 @@ def get_row_slice(index, shape, scan_rank):
     >>> utils.get_row_slice(3, [3,4,5], 2)
     (slice(0,1,None),slice(None,None,None)
 
-    '''
+    """
     pos = get_position(index, shape, scan_rank)
 
     rank = len(shape)
-    slices = [slice(0,None,1)] * rank
+    slices = [slice(0, None, 1)] * rank
 
     for i in range(len(pos)):
         slices[i] = slice(pos[i], pos[i] + 1)
 
-    slices[scan_rank-1] = slice(None)
+    slices[scan_rank - 1] = slice(None)
 
     return tuple(slices[:scan_rank])
 
+
 def create_dataset(data, scan_maxshape, fh, path, **kwargs):
-    '''
+    """
     Convenience method to create a hdf5 dataset corresponding to data being the first dataset in a scan with shape scan_maxshape
 
             Parameters:
@@ -76,13 +79,13 @@ def create_dataset(data, scan_maxshape, fh, path, **kwargs):
             Returns:
                     dataset (h5py Dataset): the result dataset
 
-    '''
+    """
 
     maxshape = scan_maxshape + data.shape
     shape = [1] * len(scan_maxshape) + list(data.shape)
     r = data.reshape(shape)
 
-    #if chunks not set use data shape
+    # if chunks not set use data shape
     if "chunks" not in kwargs:
 
         if data.size < 10:
@@ -93,9 +96,10 @@ def create_dataset(data, scan_maxshape, fh, path, **kwargs):
 
     return fh.create_dataset(path, data=r, maxshape=maxshape, **kwargs)
 
+
 def append_data(data, slice_metadata, dataset):
     ds = tuple(slice(0, s, 1) for s in data.shape)
-    '''
+    """
     Convenience method to append data to a hdf5 dataset generated in create_dataset
 
             Parameters:
@@ -103,7 +107,7 @@ def append_data(data, slice_metadata, dataset):
                     slice_metadata (array): Slice describing current position in scan
                     dataset (h5py Dataset): Dataset to set slice in
 
-    '''
+    """
     fullslice = slice_metadata + ds
     current = dataset.shape
     new_shape = tuple(max(s.stop, c) for (s, c) in zip(fullslice, current))
@@ -111,8 +115,9 @@ def append_data(data, slice_metadata, dataset):
         dataset.resize(new_shape)
     dataset[fullslice] = data
 
-def copy_nexus_axes(nxd_in, nxd_out,scan_rank,frame_axes=None):
-    '''
+
+def copy_nexus_axes(nxd_in, nxd_out, scan_rank, frame_axes=None):
+    """
     Copy the axes and associated attributes from the input NXdata to the output NXdata
 
             Parameters:
@@ -121,8 +126,8 @@ def copy_nexus_axes(nxd_in, nxd_out,scan_rank,frame_axes=None):
                     scan_rank (int): number of scan dimensions
                     frame_axes(String array): additional axes for data frame
 
-    '''
-    axout = ["."]*scan_rank
+    """
+    axout = ["."] * scan_rank
     if frame_axes is not None:
         axout = axout + frame_axes
 
@@ -130,37 +135,40 @@ def copy_nexus_axes(nxd_in, nxd_out,scan_rank,frame_axes=None):
         axin = nxd_in.attrs["axes"]
         for i in range(scan_rank):
             a = axin[i]
-            ax = a.decode("utf-8") if hasattr(a,"decode") else a
+            ax = a.decode("utf-8") if hasattr(a, "decode") else a
             axout[i] = ax
             if ax in nxd_in:
-                nxd_out.copy(nxd_in[ax],nxd_out,ax)
+                nxd_out.copy(nxd_in[ax], nxd_out, ax)
                 at = ax + "_indices"
                 if at in nxd_in.attrs:
                     nxd_out.attrs[at] = nxd_in.attrs[at]
 
     nxd_out.attrs["axes"] = axout
 
-def create_nxdata(e,name,default=True):
-    '''
+
+def create_nxdata(e, name, default=True):
+    """
     Create NXdata group
             Parameters:
                     e (h5py Group): group to create NXdata in
                     name (str): Name of NXdata group
                     default (boolean): add default tag to e pointing at new NXdata
 
-    '''
+    """
     return _create_nexus_with_default(e, name, "NXdata", default=default)
 
-def create_nxentry(fh,name,default=True):
-    '''
+
+def create_nxentry(fh, name, default=True):
+    """
     Create NXentry group
             Parameters:
                     fh (h5py Group): group to create NXentry in
                     name (str): Name of NXentry group
                     default (boolean): add default tag to parent pointing at new NXentry
 
-    '''
+    """
     return _create_nexus_with_default(fh, name, "NXentry", default=default)
+
 
 def _create_nexus_with_default(g, name, nxclass, default=True):
     d = g.create_group(name)
@@ -170,15 +178,16 @@ def _create_nexus_with_default(g, name, nxclass, default=True):
 
     return d
 
+
 def check_file_readable(path, datasets, timeout=10, retrys=5):
-    '''
+    """
     Check all datasets in a file can be read, used to determine if all files are readable if main file contains links
 
             Parameters:
                     path (str): path to hdf5 file being checked
                     datasets (array): List of paths to datasets in the file
 
-    '''
+    """
     start = time.time()
     dif = time.time() - start
 

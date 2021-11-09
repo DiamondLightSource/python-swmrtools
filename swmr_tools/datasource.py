@@ -1,11 +1,9 @@
 from .keyfollower import KeyFollower
-import numpy as np
-import h5py
-import time
 import logging
 from .utils import get_position, create_dataset, append_data
 
 logger = logging.getLogger(__name__)
+
 
 class DataSource:
     """Iterator for returning dataset frames for any number of datasets. This
@@ -49,7 +47,13 @@ class DataSource:
     """
 
     def __init__(
-        self, h5file, keypaths, dataset_paths, timeout=10, finished_dataset=None, cache_datasets=False
+        self,
+        h5file,
+        keypaths,
+        dataset_paths,
+        timeout=10,
+        finished_dataset=None,
+        cache_datasets=False,
     ):
         self.h5file = h5file
         self.dataset_paths = dataset_paths
@@ -58,8 +62,9 @@ class DataSource:
         self.kf.check_datasets()
         if cache_datasets:
             for path in self.dataset_paths:
-                self.cache[path] = FrameReader(path, self.h5file, self.kf.scan_rank,cache_dataset = True)
-
+                self.cache[path] = FrameReader(
+                    path, self.h5file, self.kf.scan_rank, cache_dataset=True
+                )
 
     def __iter__(self):
         return self
@@ -76,9 +81,11 @@ class DataSource:
             output = SliceDict()
 
             for path in self.dataset_paths:
-                #If caching requested use from cache
-                #else create
-                fg = self.cache.get(path, FrameReader(path, self.h5file, self.kf.scan_rank))
+                # If caching requested use from cache
+                # else create
+                fg = self.cache.get(
+                    path, FrameReader(path, self.h5file, self.kf.scan_rank)
+                )
                 fd = fg.read_frame(current_dataset_index)
                 output[path] = fd[0]
                 if output.slice_metadata is None:
@@ -97,7 +104,7 @@ class DataSource:
         return create_dataset(data, scan_max, fh, path)
 
     def append_data(self, data, slice_metadata, dataset):
-        return append_data(data,slice_metadata, dataset)
+        return append_data(data, slice_metadata, dataset)
 
 
 class SliceDict(dict):
@@ -140,7 +147,7 @@ class FrameReader:
 
     """
 
-    def __init__(self, dataset, h5file, scan_rank, cache_dataset = False):
+    def __init__(self, dataset, h5file, scan_rank, cache_dataset=False):
         self.dataset = dataset
         self.h5file = h5file
         self.scan_rank = scan_rank
@@ -179,7 +186,7 @@ class FrameReader:
 
         try:
             # might fail if dataset is cached
-            pos  = self.get_pos(index, shape)
+            pos = self.get_pos(index, shape)
         except ValueError:
             # refresh dataset and try again
             if hasattr(ds, "refresh"):
@@ -189,13 +196,12 @@ class FrameReader:
             pos = self.get_pos(index, shape)
 
         rank = len(shape)
-        slices = [slice(0,None,1)]*rank
+        slices = [slice(0, None, 1)] * rank
 
         for i in range(len(pos)):
             slices[i] = slice(pos[i], pos[i] + 1)
         frame = ds[tuple(slices)]
-        return frame, tuple(slices[:self.scan_rank])
+        return frame, tuple(slices[: self.scan_rank])
 
     def get_pos(self, index, shape):
         return get_position(index, shape, self.scan_rank)
-

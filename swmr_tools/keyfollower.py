@@ -238,14 +238,16 @@ class KeyFollower:
 
 
 class RowKeyFollower:
-
-    def __init__(self, h5file, keypaths, timeout=10, finished_dataset=None, row_size=None):
-        self.inner_key_follower = KeyFollower(h5file, keypaths, timeout=timeout, finished_dataset=finished_dataset)
+    def __init__(
+        self, h5file, keypaths, timeout=10, finished_dataset=None, row_size=None
+    ):
+        self.inner_key_follower = KeyFollower(
+            h5file, keypaths, timeout=timeout, finished_dataset=finished_dataset
+        )
         self.row_size = row_size
         self.scan_rank = -1
         self.maxshape = None
         self._row_count = -1
-
 
     def __iter__(self):
         return self
@@ -259,18 +261,19 @@ class RowKeyFollower:
         if self.row_size is None:
             print(self.inner_key_follower.maxshape)
             rsize = self.inner_key_follower.maxshape[-1]
-            if rsize == None:
-                raise RuntimeError("Row size must be defined if fastest max shape dimension is -1")
+            if rsize is None:
+                raise RuntimeError(
+                    "Row size must be defined if fastest max shape dimension is -1"
+                )
 
             self.row_size = rsize
 
     def __next__(self):
 
-        for i in range(self.row_size -1):
+        for i in range(self.row_size - 1):
             next(self.inner_key_follower)
 
         return next(self.inner_key_follower)
-
 
     def reset(self):
         """Reset the iterator to start again from index 0"""

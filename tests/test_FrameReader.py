@@ -69,4 +69,3 @@ def test_framereader_image_grid():
         val = fr.read_frame(i)
         print(val[1])
         assert np.all(val[0] == base + (200 * i))
-

@@ -1,6 +1,7 @@
 from swmr_tools import RowKeyFollower
 import utils
 
+
 def test_iterates_complete_dataset():
 
     key_paths = ["complete"]
@@ -21,6 +22,7 @@ def test_iterates_complete_dataset():
 
     assert current_key == 5
 
+
 def test_iterates_incomplete_dataset():
 
     mds = utils.make_mock()
@@ -39,7 +41,8 @@ def test_iterates_incomplete_dataset():
     keys = []
     for key in kf:
         keys.append(key)
-    assert keys == [9,19]
+    assert keys == [9, 19]
+
 
 def test_iterates_complete_dataset_maxshape():
 
@@ -60,4 +63,4 @@ def test_iterates_complete_dataset_maxshape():
     for key in kf:
         keys.append(key)
 
-    assert keys == [9,19,29,39,49]
+    assert keys == [9, 19, 29, 39, 49]
