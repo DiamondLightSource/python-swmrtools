@@ -87,7 +87,6 @@ class KeyFollower:
                 raise RuntimeError("Key datasets must have the same rank!")
 
             if self.maxshape is None:
-                print(tmp.maxshape)
                 self.maxshape = tmp.maxshape[:rank]
             else:
                 if np.all(self.maxshape != tmp.maxshape[:rank]):
@@ -102,7 +101,6 @@ class KeyFollower:
 
     def _get_key_list(self):
         key_list = self.key_datasets
-        print(key_list[0])
         if len(key_list) == 1 and not hasattr(self.h5file[key_list[0]], "shape"):
             k0 = key_list[0]
             ks = []
@@ -259,7 +257,6 @@ class RowKeyFollower:
         self.maxshape = self.inner_key_follower.maxshape
 
         if self.row_size is None:
-            print(self.inner_key_follower.maxshape)
             rsize = self.inner_key_follower.maxshape[-1]
             if rsize is None:
                 raise RuntimeError(
