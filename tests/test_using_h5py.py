@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 import time
 import multiprocessing as mp
-from swmr_tools import KeyFollower, DataSource
+from swmr_tools import KeyFollower, DataSource, utils
 from functools import reduce
 
 
@@ -83,6 +83,7 @@ def inner_data_read(tmp_path, cache):
             assert np.all(d == base + (20 * count))
             count = count + 1
 
+
 def test_use_case_example(tmp_path):
 
     f = str(tmp_path / "f.h5")
@@ -127,7 +128,7 @@ def test_mock_scan(tmp_path):
     p = mp.Process(target=mock_scan, args=(f,))
     p.start()
 
-    DataSource.check_file_readable(f, ["/data", "/key"], timeout=5)
+    utils.check_file_readable(f, ["/data", "/key"], timeout=5)
 
     with h5py.File(f, "r", libver="latest", swmr=True) as fh:
 
