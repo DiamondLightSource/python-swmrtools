@@ -51,6 +51,13 @@ class DataSource:
         compressed, will use direct chunk read and compression outside of h5py
         for performance.
 
+    interleaved_paths: dict (optional)
+        A dictionary of string to lists of dataset paths. Where frames are written by multiple file
+        writers in an interleaved fashion, this will take frames alternating from each
+        dataset in the list. Key dataset should be a VDS of interleaved keys. For use where
+        direct chunk read is required but not possible through a VDS stack of frames. Only
+        for stacks of frames.
+
 
     Examples
     --------
@@ -71,20 +78,45 @@ class DataSource:
         finished_dataset=None,
         cache_datasets=True,
         use_direct_chunk=False,
+        interleaved_paths=None,
     ):
         self.h5file = h5file
         self.dataset_paths = dataset_paths
+        self.interleaved_paths = interleaved_paths
         self.cache = {}
+        self.interleaved_cache = {}
         self.kf = KeyFollower(h5file, keypaths, timeout, finished_dataset)
         self.kf.check_datasets()
 
-        for path in self.dataset_paths:
-            self.cache[path] = FrameReader(
-                path,
-                self.h5file,
-                self.kf.scan_rank,
-                use_direct_chunk=use_direct_chunk,
-            )
+        if dataset_paths is None and interleaved_paths is None:
+            raise RuntimeError("No data specified to follow!")
+
+        self._add_datasets_to_cache(use_direct_chunk)
+        self._add_interleaved_datasets_to_cache(use_direct_chunk)
+
+    def _add_datasets_to_cache(self, use_direct_chunk):
+        if self.dataset_paths is not None:
+            for path in self.dataset_paths:
+                self.cache[path] = FrameReader(
+                    path,
+                    self.h5file,
+                    self.kf.scan_rank,
+                    use_direct_chunk=use_direct_chunk,
+                )
+
+    def _add_interleaved_datasets_to_cache(self, use_direct_chunk):
+        if self.interleaved_paths is not None:
+            for path, path_list in self.interleaved_paths.items():
+                self.interleaved_cache[path] = []
+                for ds_path in path_list:
+                    fr = FrameReader(
+                        ds_path,
+                        self.h5file,
+                        self.kf.scan_rank,
+                        use_direct_chunk=use_direct_chunk,
+                    )
+
+                    self.interleaved_cache[path].append(fr)
 
     def __iter__(self):
         return self
@@ -100,20 +132,48 @@ class DataSource:
 
             output = SliceDict()
 
-            for path in self.dataset_paths:
-                # If caching requested use from cache
-                # else create
-                fg = self.cache.get(
-                    path, FrameReader(path, self.h5file, self.kf.scan_rank)
-                )
-                fd = fg.read_frame(current_dataset_index)
-                output[path] = fd[0]
-                if output.slice_metadata is None:
-                    output.slice_metadata = fd[1]
-                    output.maxshape = self.kf.maxshape
-                    output.index = current_dataset_index
+            self._add_datasets_to_output(current_dataset_index, output)
+            self._add_interleaved_datasets_to_output(current_dataset_index, output)
 
             return output
+
+    def _add_datasets_to_output(self, current_dataset_index, output):
+        if self.dataset_paths is None:
+            return
+
+        for path in self.dataset_paths:
+            # If caching requested use from cache
+            # else create
+            fg = self.cache.get(path, FrameReader(path, self.h5file, self.kf.scan_rank))
+            frame, slice_metadata = fg.read_frame(current_dataset_index)
+            output[path] = frame
+            if output.slice_metadata is None:
+                output.slice_metadata = slice_metadata
+                output.maxshape = self.kf.maxshape
+                output.index = current_dataset_index
+
+    def _add_interleaved_datasets_to_output(self, current_dataset_index, output):
+        if self.interleaved_paths is None:
+            return
+
+        for path, frs in self.interleaved_cache.items():
+            n_frs = len(frs)
+            fr_index = current_dataset_index % (n_frs)
+
+            frame, slice_metadata = frs[fr_index].read_frame(
+                current_dataset_index // n_frs
+            )
+            output[path] = frame
+
+            if output.slice_metadata is None:
+                updated = (
+                    slice(current_dataset_index, current_dataset_index + 1),
+                    *slice_metadata[1:],
+                )
+                output.slice_metadata = updated
+                print(output.slice_metadata)
+                output.maxshape = self.kf.maxshape
+                output.index = current_dataset_index
 
     def reset(self):
         """Reset the iterator to start again from frame 0"""
