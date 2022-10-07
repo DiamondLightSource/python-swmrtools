@@ -33,7 +33,7 @@ jobs:
         pip install flake8 pytest pytest-cov
         pip install build
         pip install mock
-        pip install blosc
+        pip install blosc hdf5plugin
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
