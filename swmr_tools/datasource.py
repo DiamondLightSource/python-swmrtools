@@ -25,12 +25,12 @@ class DataSource:
 
     keypaths: list
         A list of paths (as strings) to key datasets in the hdf5 file. Can also be
-        the path to groups, but the groups must contain only key datasets
+        the path to groups, but the groups must contain only key datasets.
 
     dataset_paths: list
         A list of paths (as strings) to datasets in h5file that you wish
         to return frames from (Note: paths must be to the dataset and not
-                               to the group containing it)
+                               to the group containing it).
 
     timeout: int (optional)
         The maximum time allowed for a dataset to update before the timeout
@@ -38,10 +38,19 @@ class DataSource:
         is not set this will default to 10 seconds.
 
     finished_dataset: string (optional)
-
         Path to a scalar hdf5 dataset which is zero when the file is being
         written to and non-zero when the file is complete. Used to stop
-        the iterator without waiting for the timeout
+        the iterator without waiting for the timeout.
+
+    cache_dataset: bool (optional - deprecated)
+        Deprecated - Now does nothing - will be removed in future release, not holding the dataset
+        open leads to performance issues.
+
+    use_direct_chunk: bool (optional)
+        If dataset chunking is aligned to a single frame, and data is blosc
+        compressed, will use direct chunk read and compression outside of h5py
+        for performance.
+
 
     Examples
     --------
@@ -60,7 +69,7 @@ class DataSource:
         dataset_paths,
         timeout=10,
         finished_dataset=None,
-        cache_datasets=False,
+        cache_datasets=True,
         use_direct_chunk=False,
     ):
         self.h5file = h5file
@@ -68,15 +77,14 @@ class DataSource:
         self.cache = {}
         self.kf = KeyFollower(h5file, keypaths, timeout, finished_dataset)
         self.kf.check_datasets()
-        if cache_datasets:
-            for path in self.dataset_paths:
-                self.cache[path] = FrameReader(
-                    path,
-                    self.h5file,
-                    self.kf.scan_rank,
-                    cache_dataset=True,
-                    use_direct_chunk=use_direct_chunk,
-                )
+
+        for path in self.dataset_paths:
+            self.cache[path] = FrameReader(
+                path,
+                self.h5file,
+                self.kf.scan_rank,
+                use_direct_chunk=use_direct_chunk,
+            )
 
     def __iter__(self):
         return self
@@ -162,16 +170,14 @@ class FrameReader:
 
     """
 
-    def __init__(
-        self, dataset, h5file, scan_rank, cache_dataset=False, use_direct_chunk=False
-    ):
+    def __init__(self, dataset, h5file, scan_rank, use_direct_chunk=False):
         self.dataset = dataset
         self.h5file = h5file
         self.scan_rank = scan_rank
         self.use_direct_chunk = use_direct_chunk
-        self.ds = self.h5file[self.dataset] if cache_dataset else None
+        self.ds = self.h5file[self.dataset]
 
-        if use_direct_chunk and cache_dataset:
+        if use_direct_chunk:
             self.use_direct_chunk = False
             prop_dcid = self.ds.id.get_create_plist()
             if prop_dcid.get_nfilters() == 1 and prop_dcid.get_filter(0)[0] == 32001:

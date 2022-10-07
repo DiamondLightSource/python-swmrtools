@@ -1,5 +1,18 @@
 # swmr_tools
 
+.. image:: https://img.shields.io/pypi/v/swmr-tools.svg
+           :target: https://pypi.org/project/swmr-tools/
+           :alt: PyPI release
+
+.. image:: https://github.com/DiamondLightSource/python-swmrtools/actions/workflows/ci.yml/badge.svg
+           :target: https://github.com/DiamondLightSource/python-swmrtools/actions/workflows/ci.yml
+           :alt: CI status
+
+.. image:: https://readthedocs.org/projects/python-swmrtools/badge/?version=latest
+           :target: https://python-swmrtools.readthedocs.io/en/latest/?badge=latest
+           :alt: Documentation status
+
+
 swmr_tools is a Python library developed by Diamond Light Source Ltd designed to facilitate reading and processing data from HDF5 swmr files as they are being written.
 
 ## Installation
