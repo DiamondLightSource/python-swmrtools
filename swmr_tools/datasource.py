@@ -1,6 +1,13 @@
 from .keyfollower import KeyFollower
 import logging
+import numpy as np
 from .utils import get_position, create_dataset, append_data
+import sys
+
+try:
+    import blosc
+except ImportError:
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +61,7 @@ class DataSource:
         timeout=10,
         finished_dataset=None,
         cache_datasets=False,
+        use_direct_chunk=False,
     ):
         self.h5file = h5file
         self.dataset_paths = dataset_paths
@@ -63,7 +71,11 @@ class DataSource:
         if cache_datasets:
             for path in self.dataset_paths:
                 self.cache[path] = FrameReader(
-                    path, self.h5file, self.kf.scan_rank, cache_dataset=True
+                    path,
+                    self.h5file,
+                    self.kf.scan_rank,
+                    cache_dataset=True,
+                    use_direct_chunk=use_direct_chunk,
                 )
 
     def __iter__(self):
@@ -106,6 +118,9 @@ class DataSource:
     def append_data(self, data, slice_metadata, dataset):
         return append_data(data, slice_metadata, dataset)
 
+    def is_scan_finished(self):
+        return self.kf._prelim_finished_check
+
 
 class SliceDict(dict):
     """Dictionary with attributes for the slice metadata and maxshape of the scan"""
@@ -147,12 +162,28 @@ class FrameReader:
 
     """
 
-    def __init__(self, dataset, h5file, scan_rank, cache_dataset=False):
+    def __init__(
+        self, dataset, h5file, scan_rank, cache_dataset=False, use_direct_chunk=False
+    ):
         self.dataset = dataset
         self.h5file = h5file
         self.scan_rank = scan_rank
-
+        self.use_direct_chunk = use_direct_chunk
         self.ds = self.h5file[self.dataset] if cache_dataset else None
+
+        if use_direct_chunk and cache_dataset:
+            self.use_direct_chunk = False
+            prop_dcid = self.ds.id.get_create_plist()
+            if prop_dcid.get_nfilters() == 1 and prop_dcid.get_filter(0)[0] == 32001:
+                chunk = prop_dcid.get_chunk()
+                shape = self.ds.shape
+                frame_rank = len(shape) - scan_rank
+                if shape[-frame_rank:] == chunk[-frame_rank:] and all(
+                    [i == 1 for i in chunk[:scan_rank]]
+                ):
+                    if "blosc" in sys.modules:
+                        self.use_direct_chunk = True
+                        self.chunk = chunk
 
     def read_frame(self, index):
         """Method for using an index from KeyFollower to extract that frame
@@ -196,12 +227,30 @@ class FrameReader:
             pos = self.get_pos(index, shape)
 
         rank = len(shape)
+
         slices = [slice(0, None, 1)] * rank
 
         for i in range(len(pos)):
             slices[i] = slice(pos[i], pos[i] + 1)
+
+        if self.use_direct_chunk:
+            return self.get_frame_direct(ds, pos, rank, slices)
+        else:
+            return self.get_frame(ds, pos, rank, slices)
+
+    def get_frame(self, ds, pos, rank, slices):
         frame = ds[tuple(slices)]
         return frame, tuple(slices[: self.scan_rank])
+
+    def get_frame_direct(self, ds, pos, rank, slices):
+        chunk_pos = [0] * rank
+        for i in range(len(pos)):
+            chunk_pos[i] = pos[i]
+
+        out = ds.id.read_direct_chunk(chunk_pos)
+        decom = blosc.decompress(out[1])
+        a = np.frombuffer(decom, dtype=ds.dtype, count=-1)
+        return a.reshape(self.chunk), tuple(slices[: self.scan_rank])
 
     def get_pos(self, index, shape):
         return get_position(index, shape, self.scan_rank)

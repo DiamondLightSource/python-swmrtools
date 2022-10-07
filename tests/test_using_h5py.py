@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+import hdf5plugin
 import time
 import multiprocessing as mp
 from swmr_tools import KeyFollower, DataSource, utils
@@ -56,14 +57,18 @@ def test_complete_keys(tmp_path):
 
 
 def test_data_read(tmp_path):
-    inner_data_read(tmp_path, False)
+    inner_data_read(tmp_path, False, False)
 
 
 def test_data_read_cache(tmp_path):
-    inner_data_read(tmp_path, True)
+    inner_data_read(tmp_path, True, False)
 
 
-def inner_data_read(tmp_path, cache):
+def test_data_read_direct(tmp_path):
+    inner_data_read(tmp_path, True, True)
+
+
+def inner_data_read(tmp_path, cache, direct):
 
     f = str(tmp_path / "f.h5")
 
@@ -73,13 +78,21 @@ def inner_data_read(tmp_path, cache):
 
         data_paths = ["/data"]
         key_paths = ["/key"]
-        df = DataSource(fh, key_paths, data_paths, timeout=1, cache_datasets=cache)
+        df = DataSource(
+            fh,
+            key_paths,
+            data_paths,
+            timeout=1,
+            cache_datasets=cache,
+            use_direct_chunk=direct,
+        )
 
         count = 0
         base = np.arange(4 * 5)
         base = base.reshape((4, 5))
         for dset in df:
             d = dset["/data"]
+            assert d.shape == (1, 1, 4, 5)
             assert np.all(d == base + (20 * count))
             count = count + 1
 
@@ -154,7 +167,16 @@ def create_test_file(path):
         size = reduce(lambda x, y: x * y, shape)
         d = np.arange(size)
         d = d.reshape(shape)
-        fh.create_dataset("data", data=d, maxshape=shape)
+        fh.create_dataset(
+            "data",
+            data=d,
+            maxshape=shape,
+            chunks=(1, 1, 4, 5),
+            **hdf5plugin.Blosc(
+                cname="blosclz", clevel=9, shuffle=hdf5plugin.Blosc.SHUFFLE
+            )
+        )
+
         k = np.ones(shape[:-2])
         fh.create_dataset("key", data=k, maxshape=shape[:-2])
 

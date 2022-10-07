@@ -33,7 +33,6 @@ def get_position(index, shape, scan_rank):
 
 
 def get_row_slice(index, shape, scan_rank):
-
     """
     Returns a slice tuple corresponding to the row of the shape that contains the index
 
@@ -98,7 +97,6 @@ def create_dataset(data, scan_maxshape, fh, path, **kwargs):
 
 
 def append_data(data, slice_metadata, dataset):
-    ds = tuple(slice(0, s, 1) for s in data.shape)
     """
     Convenience method to append data to a hdf5 dataset generated in create_dataset
 
@@ -108,6 +106,7 @@ def append_data(data, slice_metadata, dataset):
                     dataset (h5py Dataset): Dataset to set slice in
 
     """
+    ds = tuple(slice(0, s, 1) for s in data.shape)
     fullslice = slice_metadata + ds
     current = dataset.shape
     new_shape = tuple(max(s.stop, c) for (s, c) in zip(fullslice, current))
