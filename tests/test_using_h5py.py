@@ -57,18 +57,14 @@ def test_complete_keys(tmp_path):
 
 
 def test_data_read(tmp_path):
-    inner_data_read(tmp_path, False, False)
-
-
-def test_data_read_cache(tmp_path):
-    inner_data_read(tmp_path, True, False)
+    inner_data_read(tmp_path, False)
 
 
 def test_data_read_direct(tmp_path):
-    inner_data_read(tmp_path, True, True)
+    inner_data_read(tmp_path, True)
 
 
-def inner_data_read(tmp_path, cache, direct):
+def inner_data_read(tmp_path, direct):
 
     f = str(tmp_path / "f.h5")
 
@@ -83,7 +79,6 @@ def inner_data_read(tmp_path, cache, direct):
             key_paths,
             data_paths,
             timeout=1,
-            cache_datasets=cache,
             use_direct_chunk=direct,
         )
 
