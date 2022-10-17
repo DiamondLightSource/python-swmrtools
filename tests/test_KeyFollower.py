@@ -203,6 +203,40 @@ def test_reads_updates():
     assert current_key == 50
 
 
+def test_refresh_max():
+
+    mds = utils.make_mock()
+    mds.dataset.reshape((-1))[:26] = 1
+
+    key_paths = ["incomplete"]
+    f = {"incomplete": mds}
+    kf = KeyFollower(f, key_paths, timeout=0.1)
+    kf.check_datasets()
+    current_key = 0
+
+    max = kf.get_current_max()
+
+    assert current_key == 0
+
+    kf.refresh()
+
+    max = kf.get_current_max()
+
+    assert max == 25
+
+    assert not kf.are_keys_complete()
+
+    mds.dataset[...] = 1
+
+    kf.refresh()
+
+    max = kf.get_current_max()
+
+    assert max == 49
+
+    assert kf.are_keys_complete()
+
+
 def test_update_changes_shape():
 
     mds = utils.make_mock(shape=[2, 10, 1, 1])
@@ -250,6 +284,3 @@ def test_multiple_keys_from_node():
 # Skip this key and return the index of the next non-zero key
 def test_skip_dead_frame():
     pass
-
-
-# FrameGrabber Tests

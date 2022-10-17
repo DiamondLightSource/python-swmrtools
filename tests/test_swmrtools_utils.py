@@ -83,7 +83,7 @@ def inc_shape_snake(dim, current_pos, max_shape, snaking):
 
     if current_pos[dim] < max_shape[dim] - 1 and not snaking[dim]:
         current_pos[dim] += 1
-    elif current_pos[dim] > 0 and snaking[dim] == True:
+    elif current_pos[dim] > 0 and snaking[dim]:
         current_pos[dim] -= 1
     elif current_pos[dim] == max_shape[dim] - 1 and not snaking[dim]:
         snaking[dim] = True

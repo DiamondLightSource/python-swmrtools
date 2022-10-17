@@ -148,7 +148,6 @@ class KeyFollower:
         self.start_time = time.time()
 
     def _is_next(self):
-        # returns true if all the keys for index current_key + 1 are nonzero
 
         karray = self._get_keys()
         if not karray:
@@ -233,6 +232,18 @@ class KeyFollower:
             return True
 
         return False
+
+    def get_current_max(self):
+        """Returns the current maximum key"""
+        return self.current_max
+
+    def refresh(self):
+        """Force an update of the current maximum key"""
+        return self._is_next()
+
+    def are_keys_complete(self):
+        """Check position of current maximum against the max shape"""
+        return self.current_max == (np.prod(self.maxshape) - 1)
 
 
 class RowKeyFollower:
