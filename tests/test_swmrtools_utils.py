@@ -61,6 +61,39 @@ def test_get_position():
     assert out == (0, 0)
 
 
+def test_get_position_snake():
+
+    max_shape = [3, 4, 5, 4, 8, 8]
+    scan_rank = 4
+
+    snaking = [False] * scan_rank
+    scan_shape = max_shape[:scan_rank]
+    shape = [0] * scan_rank
+    for i in range(np.prod(max_shape[:scan_rank]) - 1):
+        out = utils.get_position_snake(i, max_shape, scan_rank)
+        print("out {} shape {}".format(out, shape))
+        assert out == tuple(shape)
+        inc_shape_snake(-1, shape, scan_shape, snaking)
+
+
+def inc_shape_snake(dim, current_pos, max_shape, snaking):
+    """
+    increment a position in a scan by one step forming a snaking pattern
+    """
+
+    if current_pos[dim] < max_shape[dim] - 1 and not snaking[dim]:
+        current_pos[dim] += 1
+    elif current_pos[dim] > 0 and snaking[dim] == True:
+        current_pos[dim] -= 1
+    elif current_pos[dim] == max_shape[dim] - 1 and not snaking[dim]:
+        snaking[dim] = True
+        inc_shape_snake(dim - 1, current_pos, max_shape, snaking)
+    elif current_pos[dim] == 0 and snaking[dim]:
+        snaking[dim] = False
+        inc_shape_snake(dim - 1, current_pos, max_shape, snaking)
+    return
+
+
 def test_create_dataset(tmp_path):
     f = str(tmp_path / "scan.h5")
 
@@ -158,4 +191,78 @@ def test_check_file_readable(tmp_path):
         utils.create_dataset(data, scan_max, fh, path)
 
     assert utils.check_file_readable(f, ["/dataset"], timeout=0.1) is True
+    # check datase which should not be present
     assert utils.check_file_readable(f, ["/datase"], timeout=0.1) is False
+
+
+def test_convert_stack_to_grid():
+
+    scan_shape = [3, 4]
+    slices = [
+        slice(0, None, 1),
+    ] * 3
+
+    index = 3
+
+    slices[0] = slice(index, index + 1, 1)
+
+    new_location = utils.convert_stack_to_grid(slices, scan_shape, snake=False)
+    expected = [
+        slice(0, None, 1),
+    ] * 4
+    expected[1] = slice(index, index + 1, 1)
+    expected[0] = slice(0, 1, 1)
+
+    assert new_location == expected
+
+    index = 9
+
+    slices[0] = slice(index, index + 1, 1)
+
+    new_location = utils.convert_stack_to_grid(slices, scan_shape, snake=False)
+    expected = [
+        slice(0, None, 1),
+    ] * 4
+    expected[1] = slice(1, 2, 1)
+    expected[0] = slice(2, 3, 1)
+
+    assert new_location == expected
+
+    new_location = utils.convert_stack_to_grid(slices, scan_shape, snake=True)
+    expected = [
+        slice(0, None, 1),
+    ] * 4
+    expected[1] = slice(1, 2, 1)
+    expected[0] = slice(2, 3, 1)
+
+    assert new_location == expected
+
+    index = 7
+
+    slices[0] = slice(index, index + 1, 1)
+
+    new_location = utils.convert_stack_to_grid(slices, scan_shape, snake=True)
+    expected = [
+        slice(0, None, 1),
+    ] * 4
+    expected[1] = slice(0, 1, 1)
+    expected[0] = slice(1, 2, 1)
+
+    print(new_location)
+
+    assert new_location == expected
+
+    index = 6
+
+    slices[0] = slice(index, index + 1, 1)
+
+    new_location = utils.convert_stack_to_grid(slices, scan_shape, snake=True)
+    expected = [
+        slice(0, None, 1),
+    ] * 4
+    expected[1] = slice(1, 2, 1)
+    expected[0] = slice(1, 2, 1)
+
+    print(new_location)
+
+    assert new_location == expected
