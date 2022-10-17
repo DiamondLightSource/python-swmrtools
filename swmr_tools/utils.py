@@ -20,7 +20,6 @@ def get_position(index, shape, scan_rank):
     Examples
     --------
 
-
     >>> utils.get_position(0, [3,4,5], 2)
     (0,0)
 
@@ -30,6 +29,36 @@ def get_position(index, shape, scan_rank):
     pos = np.unravel_index(index, scan_shape)
 
     return pos
+
+
+def get_position_snake(index, shape, scan_rank):
+    """
+    Returns the position in a snake scan associated with the given index
+
+            Parameters:
+                    index (int): Flattened index of scan point
+                    shape (array): Shape of dataset of interest
+                    scan_rank (int): Rank of scan (must be <= len(shape))
+
+            Returns:
+                    position (tuple): Ndimensional position in scan associated with the index
+    Examples
+    --------
+
+    >>> utils.get_position_snake(0, [3,4,5], 2)
+    (0,0)
+
+    """
+    non_snake = get_position(index, shape, scan_rank)
+    out = [*non_snake]
+    sum = non_snake[0]
+    for i in range(1, len(out)):
+        if sum % 2 == 1:
+            out[i] = shape[i] - non_snake[i] - 1
+
+        sum += out[i]
+
+    return tuple(out)
 
 
 def get_row_slice(index, shape, scan_rank):
@@ -204,3 +233,21 @@ def check_file_readable(path, datasets, timeout=10, retrys=5):
 
     logger.error("Could not read file " + path)
     return False
+
+
+def convert_stack_to_grid(slices, scan_shape, snake=False):
+
+    index = slices[0].start
+
+    if not snake:
+        pos = get_position(index, scan_shape, len(scan_shape))
+    else:
+        pos = get_position_snake(index, scan_shape, len(scan_shape))
+
+    return _get_slices_from_position(pos, slices)
+
+
+def _get_slices_from_position(pos, slices):
+    slices_out = [slice(p, p + 1, 1) for p in pos]
+    slices_out += slices[1:]
+    return slices_out
