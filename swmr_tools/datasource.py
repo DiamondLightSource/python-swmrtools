@@ -171,7 +171,6 @@ class DataSource:
                     *slice_metadata[1:],
                 )
                 output.slice_metadata = updated
-                print(output.slice_metadata)
                 output.maxshape = self.kf.maxshape
                 output.index = current_dataset_index
 
