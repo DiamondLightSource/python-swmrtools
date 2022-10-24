@@ -8,7 +8,7 @@ long_description = (this_directory / "README.md").read_text()
 setup(
     name="swmr_tools",
     packages=["swmr_tools"],
-    version="0.7.0",
+    version="0.7.1",
     license="MIT",
     description="Python iterator for safely monitoring NeXus files",
     long_description=long_description,
