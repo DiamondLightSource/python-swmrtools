@@ -204,7 +204,7 @@ class KeyFollower:
         f = self.h5file[self.finished_dataset]
         f.refresh()
 
-        finished = f[0] == 1
+        finished = not f[0] == 0
 
         if self._prelim_finished_check and finished:
             return True
