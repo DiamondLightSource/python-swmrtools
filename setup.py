@@ -2,6 +2,7 @@ from distutils.core import setup
 
 # read the contents of your README file
 from pathlib import Path
+
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
@@ -12,7 +13,7 @@ setup(
     license="MIT",
     description="Python iterator for safely monitoring NeXus files",
     long_description=long_description,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     author="Diamond Light Source Ltd",
     author_email="scientificsoftware@diamond.ac.uk",
     url="https://github.com/DiamondLightSource/python-swmrtools",
