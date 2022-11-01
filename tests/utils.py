@@ -17,4 +17,6 @@ def make_mock(shape=[5, 10, 1, 1], maxshape=None):
         return mds.dataset[value]
 
     mds.__getitem__ = Mock(side_effect=slicemock)
+
+    mds.size = mds.dataset.size
     return mds
