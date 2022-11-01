@@ -3,6 +3,7 @@ import logging
 import numpy as np
 from .utils import get_position, create_dataset, append_data
 import sys
+from time import sleep
 
 try:
     import blosc
@@ -123,19 +124,14 @@ class DataSource:
 
     def __next__(self):
 
-        if self.kf.is_finished():
-            raise StopIteration
+        current_dataset_index = next(self.kf)
 
-        else:
+        output = SliceDict()
 
-            current_dataset_index = next(self.kf)
+        self._add_datasets_to_output(current_dataset_index, output)
+        self._add_interleaved_datasets_to_output(current_dataset_index, output)
 
-            output = SliceDict()
-
-            self._add_datasets_to_output(current_dataset_index, output)
-            self._add_interleaved_datasets_to_output(current_dataset_index, output)
-
-            return output
+        return output
 
     def _add_datasets_to_output(self, current_dataset_index, output):
         if self.dataset_paths is None:
@@ -312,7 +308,15 @@ class FrameReader:
         for i in range(len(pos)):
             chunk_pos[i] = pos[i]
 
-        out = ds.id.read_direct_chunk(chunk_pos)
+        try:
+            out = ds.id.read_direct_chunk(chunk_pos)
+        except Exception:
+            # let the file system catch up
+            sleep(1)
+            if hasattr(ds, "refresh"):
+                ds.refresh()
+            out = ds.id.read_direct_chunk(chunk_pos)
+
         decom = blosc.decompress(out[1])
         a = np.frombuffer(decom, dtype=ds.dtype, count=-1)
         return a.reshape(self.chunk), tuple(slices[: self.scan_rank])
