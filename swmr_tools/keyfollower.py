@@ -61,7 +61,6 @@ class KeyFollower:
         self._finish_tag = False
         self._check_successful = False
         self.scan_rank = -1
-        self._prelim_finished_check = False
         self.maxshape = None
 
     def __iter__(self):
@@ -141,7 +140,6 @@ class KeyFollower:
         """Reset the iterator to start again from index 0"""
         self.current_key = -1
         self._finish_tag = False
-        self._prelim_finished_check = False
 
     def _timer_reset(self):
         # Hidden method, restarts timer for timeout method
@@ -204,18 +202,15 @@ class KeyFollower:
         f = self.h5file[self.finished_dataset]
         f.refresh()
 
-        finished = not f[0] == 0
+        if f.size != 1:
 
-        if self._prelim_finished_check and finished:
-            return True
+            logger.warning(
+                f"finished dataset ({self.finished_dataset}) is non-singular"
+            )
+            return False
 
-        # go through the timeout loop once more
-        # in case finish is flushed slightly before
-        # the last of the keys
-        if finished:
-            self._prelim_finished_check = True
-
-        return False
+        # returning True means we're finished
+        return not f[0] == 0
 
     def is_finished(self):
         """Returns True if the KeyFollower instance has completed its iteration"""
