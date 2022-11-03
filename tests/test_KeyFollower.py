@@ -1,5 +1,6 @@
 from swmr_tools import KeyFollower
 import utils
+import numpy as np
 
 
 def test_first_frame():
@@ -276,6 +277,31 @@ def test_multiple_keys_from_node():
     for key in kf:
         current_key += 1
     assert current_key == 25
+
+
+def test_finished_dataset():
+
+    data = "data"
+    finished = "finished"
+    key_paths = [data]
+
+    mds = utils.make_mock()
+    mds.dataset = mds.dataset + 1
+    mfds = utils.make_mock(shape=[1])
+    mfds.dataset = np.array([0])
+    f = {data: mds, finished: mfds}
+    kf = KeyFollower(f, key_paths, timeout=0.1, finished_dataset=finished)
+    assert not kf.is_finished()
+
+    mfds.dataset = np.array([1])
+    assert kf.is_finished()
+
+    # can't have a finished array with more than one element
+    mfds = utils.make_mock(shape=[4])
+    mfds.dataset = mfds.dataset + 1
+    f = {data: mds, finished: mfds}
+    kf = KeyFollower(f, key_paths, timeout=0.1, finished_dataset=finished)
+    assert not kf.is_finished()
 
 
 # Test and Feature to be added
