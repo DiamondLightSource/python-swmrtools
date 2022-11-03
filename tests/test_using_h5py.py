@@ -132,7 +132,6 @@ def test_use_case_example(tmp_path):
 def test_mock_scan(tmp_path):
     f = str(tmp_path / "scan.h5")
 
-    mp.set_start_method("spawn")
     p = mp.Process(target=mock_scan, args=(f,))
     p.start()
 
@@ -150,6 +149,32 @@ def test_mock_scan(tmp_path):
         for dset in df:
             d = dset["/data"]
             assert d[0, 0, 0].item() == count
+            count = count + 1
+
+    p.join()
+
+
+def test_mock_grid_scan(tmp_path):
+    f = str(tmp_path / "scan.h5")
+
+    p = mp.Process(target=mock_grid_scan, args=(f,))
+    p.start()
+
+    utils.check_file_readable(f, ["/data", "/key"], timeout=5)
+
+    with h5py.File(f, "r", libver="latest", swmr=True) as fh:
+
+        data_paths = ["/data"]
+        key_paths = ["/key"]
+        df = DataSource(fh, key_paths, data_paths, timeout=3)
+
+        count = 1
+
+        assert p.is_alive()
+        for dset in df:
+            d = dset["/data"]
+            assert d[0, 0, 0, 0].item() == count
+            print(d[0, 0, 0, 0].item())
             count = count + 1
 
     p.join()
@@ -200,3 +225,32 @@ def mock_scan(path):
             ks.flush()
             print("flush " + str(i))
             time.sleep(1)
+
+
+def mock_grid_scan(path):
+
+    with h5py.File(path, "w", libver="latest") as fh:
+        maxshape = (3, 4, 9, 10)
+        shape = (1, 1, 9, 10)
+
+        d = np.zeros(shape)
+
+        ds = fh.create_dataset("data", data=d, maxshape=maxshape)
+        k = np.zeros((1, 1))
+        ks = fh.create_dataset("key", data=k, maxshape=(3, 4))
+        fh.swmr_mode = True
+        count = 1
+        for j in range(3):
+            for i in range(4):
+                # s = (j + 1, i + 1, 9, 10)
+                if i == 0:
+                    print("Resize")
+                    ds.resize((j + 1, 4, 9, 10))
+                    ks.resize((j + 1, 4))
+                ds[j, i, :, :] = np.ones(shape) * count
+                count += 1
+                ds.flush()
+                ks[j, i] = 1
+                ks.flush()
+                print("flush " + str((j, i)))
+                time.sleep(1)
