@@ -302,11 +302,3 @@ def test_finished_dataset():
     f = {data: mds, finished: mfds}
     kf = KeyFollower(f, key_paths, timeout=0.1, finished_dataset=finished)
     assert not kf.is_finished()
-
-
-# Test and Feature to be added
-# Given array of this form[..., 30, 0, 32, ...] if iterator was at the 30th index
-# It should be able to detect that there are non-zero keys ahead of the 0 key and infer that it should
-# Skip this key and return the index of the next non-zero key
-def test_skip_dead_frame():
-    pass

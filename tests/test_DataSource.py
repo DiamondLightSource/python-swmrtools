@@ -7,17 +7,15 @@ def test_iterates_complete_dataset():
 
     mds = utils.make_mock([10])
     mdsc = utils.make_mock([10])
+    finished = utils.make_mock([1])
     mds.dataset[...] = 1
     mdsc.dataset[...] = np.arange(10)
 
-    f = {
-        "complete": mds,
-        "data/complete": mdsc,
-    }
+    f = {"complete": mds, "data/complete": mdsc, "finished": finished}
 
     data_paths = ["data/complete"]
     key_paths = ["complete"]
-    df = DataSource(f, key_paths, data_paths, timeout=0.1)
+    df = DataSource(f, key_paths, data_paths, timeout=0.1, finished_dataset="finished")
 
     val = 0
     for dset in df:
@@ -28,6 +26,46 @@ def test_iterates_complete_dataset():
         print(dset.slice_metadata)
         assert d == val
         val = val + 1
+
+    assert val == 10
+
+    assert df.is_scan_finished()
+    assert df.has_timed_out()
+
+    finished.dataset[0] = 1
+    df.reset()
+
+    val = 0
+    for dset in df:
+        d = dset["data/complete"]
+        assert dset.maxshape == [10]
+        assert dset.index == val
+        assert dset.slice_metadata == (slice(val, val + 1, None),)
+        assert d == val
+        val = val + 1
+
+    assert val == 10
+
+    assert df.is_scan_finished()
+    assert not df.has_timed_out()
+
+    finished.dataset[0] = 0
+    mds.dataset[-1] = 0
+    df.reset()
+
+    val = 0
+    for dset in df:
+        d = dset["data/complete"]
+        assert dset.maxshape == [10]
+        assert dset.index == val
+        assert dset.slice_metadata == (slice(val, val + 1, None),)
+        assert d == val
+        val = val + 1
+
+    assert val == 9
+
+    assert df.is_scan_finished()
+    assert df.has_timed_out()
 
 
 def test_iterates_complete_interleaved_datasets():
