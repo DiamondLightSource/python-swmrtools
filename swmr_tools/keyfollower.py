@@ -139,6 +139,7 @@ class KeyFollower:
     def reset(self):
         """Reset the iterator to start again from index 0"""
         self.current_key = -1
+        self.current_max = -1
         self._finish_tag = False
 
     def _timer_reset(self):

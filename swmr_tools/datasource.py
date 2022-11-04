@@ -5,6 +5,8 @@ from .utils import get_position, create_dataset, append_data
 import sys
 from time import sleep
 
+from itertools import cycle
+
 try:
     import blosc
 except ImportError:
@@ -55,9 +57,13 @@ class DataSource:
     interleaved_paths: dict (optional)
         A dictionary of string to lists of dataset paths. Where frames are written by multiple file
         writers in an interleaved fashion, this will take frames alternating from each
-        dataset in the list. Key dataset should be a VDS of interleaved keys. For use where
+        dataset in the list. Key dataset may be a VDS of interleaved keys or added as interleaved_keys. For use where
         direct chunk read is required but not possible through a VDS stack of frames. Only
         for stacks of frames.
+
+    interleaved_keys: list (optional)
+        A list of list of strings which are paths to key datasets. For use with interleaved_paths, when this is no
+        key VDS.
 
 
     Examples
@@ -80,6 +86,7 @@ class DataSource:
         cache_datasets=True,
         use_direct_chunk=False,
         interleaved_paths=None,
+        interleaved_keys=None,
     ):
         self.h5file = h5file
         self.dataset_paths = dataset_paths
@@ -87,14 +94,54 @@ class DataSource:
         self.max_index = -1
         self.cache = {}
         self.interleaved_cache = {}
+        self._interleaved_keyfollowers = []
+        self._interleaved_generator = None
         self.kf = KeyFollower(h5file, keypaths, timeout, finished_dataset)
         self.kf.check_datasets()
+
+        if interleaved_keys is not None:
+            self._create_interleaved_generator(
+                h5file, interleaved_keys, timeout, finished_dataset
+            )
 
         if dataset_paths is None and interleaved_paths is None:
             raise RuntimeError("No data specified to follow!")
 
         self._add_datasets_to_cache(use_direct_chunk)
         self._add_interleaved_datasets_to_cache(use_direct_chunk)
+
+    def _create_interleaved_generator(
+        self, h5file, interleaved_keys, timeout, finished_dataset
+    ):
+
+        for keys in interleaved_keys:
+            fs = []
+            for key in keys:
+                kf = KeyFollower(h5file, [key], timeout, finished_dataset)
+                fs.append(kf)
+
+            self._interleaved_keyfollowers.append(fs)
+
+        self._interleaved_generator = self._interleaved_key_sequence(
+            self._interleaved_keyfollowers
+        )
+
+    def _interleaved_key_sequence(self, kfs):
+
+        all = []
+        for kf in kfs:
+            all.append(cycle(kf))
+
+        seq = zip(*all)
+
+        while True:
+            same_point = next(seq)
+
+            try:
+                output = [next(k) for k in same_point]
+                yield output
+            except StopIteration:
+                return None
 
     def _add_datasets_to_cache(self, use_direct_chunk):
         if self.dataset_paths is not None:
@@ -124,12 +171,14 @@ class DataSource:
         return self
 
     def __next__(self):
-
         current_dataset_index = next(self.kf)
         force_refresh = False
         if self.max_index < self.kf.current_max:
             self.max_index = self.kf.current_max
             force_refresh = True
+
+        if self._interleaved_generator:
+            next(self._interleaved_generator)
 
         output = SliceDict()
 
@@ -185,6 +234,14 @@ class DataSource:
         """Reset the iterator to start again from frame 0"""
         self.kf.reset()
         self.max_index = -1
+        for keysets in self._interleaved_keyfollowers:
+            for k in keysets:
+                k.reset()
+
+        if self._interleaved_generator is not None:
+            self._interleaved_generator = self._interleaved_key_sequence(
+                self._interleaved_keyfollowers
+            )
 
     def create_dataset(self, data, fh, path):
         scan_max = self.kf.maxshape
@@ -305,7 +362,6 @@ class FrameReader:
         except ValueError:
             # refresh dataset and try again
             if hasattr(ds, "refresh"):
-                print("Refresh")
                 ds.refresh()
 
             shape = ds.shape
