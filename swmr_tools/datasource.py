@@ -117,7 +117,7 @@ class DataSource:
                         self.h5file,
                         self.kf.scan_rank,
                         use_direct_chunk=use_direct_chunk,
-                        cache_datasets=self.cache_datasets
+                        cache_datasets=self.cache_datasets,
                     )
 
                     self.interleaved_cache[path].append(fr)
@@ -149,7 +149,15 @@ class DataSource:
         for path in self.dataset_paths:
             # If caching requested use from cache
             # else create
-            fg = self.cache.get(path, FrameReader(path, self.h5file, self.kf.scan_rank, cache_datasets=self.cache_datasets))
+            fg = self.cache.get(
+                path,
+                FrameReader(
+                    path,
+                    self.h5file,
+                    self.kf.scan_rank,
+                    cache_datasets=self.cache_datasets,
+                ),
+            )
             frame, slice_metadata = fg.read_frame(
                 current_dataset_index, force_refresh=force_refresh
             )
@@ -247,7 +255,9 @@ class FrameReader:
 
     """
 
-    def __init__(self, dataset, h5file, scan_rank, use_direct_chunk=False, cache_datasets=False):
+    def __init__(
+        self, dataset, h5file, scan_rank, use_direct_chunk=False, cache_datasets=False
+    ):
         self.dataset = dataset
         self.h5file = h5file
         self.scan_rank = scan_rank
@@ -257,11 +267,12 @@ class FrameReader:
             self.ds = self.h5file[self.dataset]
 
         if use_direct_chunk:
+            ds = self.ds if self.ds is not None else self.h5file[self.dataset]
             self.use_direct_chunk = False
-            prop_dcid = self.ds.id.get_create_plist()
+            prop_dcid = ds.id.get_create_plist()
             if prop_dcid.get_nfilters() == 1 and prop_dcid.get_filter(0)[0] == 32001:
                 chunk = prop_dcid.get_chunk()
-                shape = self.ds.shape
+                shape = ds.shape
                 frame_rank = len(shape) - scan_rank
                 if shape[-frame_rank:] == chunk[-frame_rank:] and all(
                     [i == 1 for i in chunk[:scan_rank]]
