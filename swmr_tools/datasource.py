@@ -43,9 +43,9 @@ class DataSource:
         written to and non-zero when the file is complete. Used to stop
         the iterator without waiting for the timeout.
 
-    cache_dataset: bool (optional - deprecated)
-        Deprecated - Now does nothing - will be removed in future release, not holding the dataset
-        open leads to performance issues.
+    cache_dataset: bool (optional)
+        Hold a reference to the dataset. Can lead to an increase in read performance,
+        but can cause issues with SWMR and VDS.
 
     use_direct_chunk: bool (optional)
         If dataset chunking is aligned to a single frame, and data is blosc
@@ -77,7 +77,7 @@ class DataSource:
         dataset_paths,
         timeout=10,
         finished_dataset=None,
-        cache_datasets=True,
+        cache_datasets=False,
         use_direct_chunk=False,
         interleaved_paths=None,
     ):
@@ -86,6 +86,7 @@ class DataSource:
         self.interleaved_paths = interleaved_paths
         self.max_index = -1
         self.cache = {}
+        self.cache_datasets = cache_datasets
         self.interleaved_cache = {}
         self.kf = KeyFollower(h5file, keypaths, timeout, finished_dataset)
         self.kf.check_datasets()
@@ -116,6 +117,7 @@ class DataSource:
                         self.h5file,
                         self.kf.scan_rank,
                         use_direct_chunk=use_direct_chunk,
+                        cache_datasets=self.cache_datasets
                     )
 
                     self.interleaved_cache[path].append(fr)
@@ -147,7 +149,7 @@ class DataSource:
         for path in self.dataset_paths:
             # If caching requested use from cache
             # else create
-            fg = self.cache.get(path, FrameReader(path, self.h5file, self.kf.scan_rank))
+            fg = self.cache.get(path, FrameReader(path, self.h5file, self.kf.scan_rank, cache_datasets=self.cache_datasets))
             frame, slice_metadata = fg.read_frame(
                 current_dataset_index, force_refresh=force_refresh
             )
@@ -245,12 +247,15 @@ class FrameReader:
 
     """
 
-    def __init__(self, dataset, h5file, scan_rank, use_direct_chunk=False):
+    def __init__(self, dataset, h5file, scan_rank, use_direct_chunk=False, cache_datasets=False):
         self.dataset = dataset
         self.h5file = h5file
         self.scan_rank = scan_rank
         self.use_direct_chunk = use_direct_chunk
-        self.ds = self.h5file[self.dataset]
+        self.ds = None
+        if cache_datasets:
+            print("cache")
+            self.ds = self.h5file[self.dataset]
 
         if use_direct_chunk:
             self.use_direct_chunk = False
