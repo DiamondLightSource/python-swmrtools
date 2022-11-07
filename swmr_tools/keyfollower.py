@@ -183,7 +183,8 @@ class KeyFollower:
         kds = []
         for key_path in self._get_key_list():
             dataset = self.h5file[key_path]
-            dataset.refresh()
+            if hasattr(dataset, "refresh"):
+                dataset.refresh()
             d = dataset[...].flatten()
             kds.append(d)
 
@@ -204,7 +205,8 @@ class KeyFollower:
             return False
 
         f = self.h5file[self.finished_dataset]
-        f.refresh()
+        if hasattr(f, "refresh"):
+            f.refresh()
 
         if f.size != 1:
 

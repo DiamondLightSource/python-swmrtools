@@ -325,7 +325,6 @@ class FrameReader:
         except ValueError:
             # refresh dataset and try again
             if hasattr(ds, "refresh"):
-                print("Refresh")
                 ds.refresh()
 
             shape = ds.shape
