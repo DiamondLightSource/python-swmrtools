@@ -55,6 +55,7 @@ class KeyFollower:
         self.current_key = -1
         self.current_max = -1
         self.timeout = timeout
+        self.timed_out = False
         self.start_time = None
         self.key_datasets = keypaths
         self.finished_dataset = finished_dataset
@@ -139,6 +140,8 @@ class KeyFollower:
     def reset(self):
         """Reset the iterator to start again from index 0"""
         self.current_key = -1
+        self.current_max = -1
+        self.timed_out = False
         self._finish_tag = False
 
     def _timer_reset(self):
@@ -191,6 +194,7 @@ class KeyFollower:
             return False
 
         if time.time() > self.start_time + self.timeout:
+            self.timed_out = True
             return True
         else:
             return False

@@ -194,7 +194,10 @@ class DataSource:
         return append_data(data, slice_metadata, dataset)
 
     def is_scan_finished(self):
-        return self.kf._prelim_finished_check
+        return self.kf._finish_tag
+
+    def has_timed_out(self):
+        return self.kf.timed_out
 
 
 class SliceDict(dict):
