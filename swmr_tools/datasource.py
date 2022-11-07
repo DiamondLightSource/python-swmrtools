@@ -147,8 +147,6 @@ class DataSource:
             return
 
         for path in self.dataset_paths:
-            # If caching requested use from cache
-            # else create
             fg = self.cache.get(
                 path,
                 FrameReader(
@@ -226,12 +224,12 @@ class FrameReader:
 
     Parameters
     ----------
+    dataset : str
+        The full path to the dataset to extract frames from in the hdf5_File
+
     h5file : h5py.File
         Instance of h5py.File object. Choose the file containing dataset you
         want to extract frames from.
-
-    dataset : str
-        The full path to the dataset to extract frames from in the hdf5_File
 
     scan_rank: int
         The rank of the "non-data-frame" part of the N-dimensional dataset
@@ -244,6 +242,10 @@ class FrameReader:
         If dataset chunking is aligned to a single frame, and data is blosc
         compressed, will use direct chunk read and compression outside of h5py
         for performance.
+
+    cache_datasets: bool (optional)
+        Hold a reference to the dataset. Can lead to an increase in read performance,
+        but can cause issues with SWMR and VDS.
 
     Examples
     --------
