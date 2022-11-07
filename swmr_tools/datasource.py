@@ -254,7 +254,6 @@ class FrameReader:
         self.use_direct_chunk = use_direct_chunk
         self.ds = None
         if cache_datasets:
-            print("cache")
             self.ds = self.h5file[self.dataset]
 
         if use_direct_chunk:
