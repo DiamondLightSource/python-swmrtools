@@ -43,9 +43,9 @@ class DataSource:
         written to and non-zero when the file is complete. Used to stop
         the iterator without waiting for the timeout.
 
-    cache_dataset: bool (optional - deprecated)
-        Deprecated - Now does nothing - will be removed in future release, not holding the dataset
-        open leads to performance issues.
+    cache_dataset: bool (optional)
+        Hold a reference to the dataset. Can lead to an increase in read performance,
+        but can cause issues with SWMR and VDS.
 
     use_direct_chunk: bool (optional)
         If dataset chunking is aligned to a single frame, and data is blosc
@@ -77,7 +77,7 @@ class DataSource:
         dataset_paths,
         timeout=10,
         finished_dataset=None,
-        cache_datasets=True,
+        cache_datasets=False,
         use_direct_chunk=False,
         interleaved_paths=None,
     ):
@@ -86,6 +86,7 @@ class DataSource:
         self.interleaved_paths = interleaved_paths
         self.max_index = -1
         self.cache = {}
+        self.cache_datasets = cache_datasets
         self.interleaved_cache = {}
         self.kf = KeyFollower(h5file, keypaths, timeout, finished_dataset)
         self.kf.check_datasets()
@@ -116,6 +117,7 @@ class DataSource:
                         self.h5file,
                         self.kf.scan_rank,
                         use_direct_chunk=use_direct_chunk,
+                        cache_datasets=self.cache_datasets,
                     )
 
                     self.interleaved_cache[path].append(fr)
@@ -145,9 +147,15 @@ class DataSource:
             return
 
         for path in self.dataset_paths:
-            # If caching requested use from cache
-            # else create
-            fg = self.cache.get(path, FrameReader(path, self.h5file, self.kf.scan_rank))
+            fg = self.cache.get(
+                path,
+                FrameReader(
+                    path,
+                    self.h5file,
+                    self.kf.scan_rank,
+                    cache_datasets=self.cache_datasets,
+                ),
+            )
             frame, slice_metadata = fg.read_frame(
                 current_dataset_index, force_refresh=force_refresh
             )
@@ -216,12 +224,12 @@ class FrameReader:
 
     Parameters
     ----------
+    dataset : str
+        The full path to the dataset to extract frames from in the hdf5_File
+
     h5file : h5py.File
         Instance of h5py.File object. Choose the file containing dataset you
         want to extract frames from.
-
-    dataset : str
-        The full path to the dataset to extract frames from in the hdf5_File
 
     scan_rank: int
         The rank of the "non-data-frame" part of the N-dimensional dataset
@@ -235,6 +243,10 @@ class FrameReader:
         compressed, will use direct chunk read and compression outside of h5py
         for performance.
 
+    cache_datasets: bool (optional)
+        Hold a reference to the dataset. Can lead to an increase in read performance,
+        but can cause issues with SWMR and VDS.
+
     Examples
     --------
 
@@ -245,19 +257,24 @@ class FrameReader:
 
     """
 
-    def __init__(self, dataset, h5file, scan_rank, use_direct_chunk=False):
+    def __init__(
+        self, dataset, h5file, scan_rank, use_direct_chunk=False, cache_datasets=False
+    ):
         self.dataset = dataset
         self.h5file = h5file
         self.scan_rank = scan_rank
         self.use_direct_chunk = use_direct_chunk
-        self.ds = self.h5file[self.dataset]
+        self.ds = None
+        if cache_datasets:
+            self.ds = self.h5file[self.dataset]
 
         if use_direct_chunk:
+            ds = self.ds if self.ds is not None else self.h5file[self.dataset]
             self.use_direct_chunk = False
-            prop_dcid = self.ds.id.get_create_plist()
+            prop_dcid = ds.id.get_create_plist()
             if prop_dcid.get_nfilters() == 1 and prop_dcid.get_filter(0)[0] == 32001:
                 chunk = prop_dcid.get_chunk()
-                shape = self.ds.shape
+                shape = ds.shape
                 frame_rank = len(shape) - scan_rank
                 if shape[-frame_rank:] == chunk[-frame_rank:] and all(
                     [i == 1 for i in chunk[:scan_rank]]
