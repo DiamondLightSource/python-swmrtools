@@ -43,7 +43,7 @@ class DataSource:
         written to and non-zero when the file is complete. Used to stop
         the iterator without waiting for the timeout.
 
-    cache_dataset: bool (optional)
+    cache_datasets: bool (optional)
         Hold a reference to the dataset. Can lead to an increase in read performance,
         but can cause issues with SWMR and VDS.
 
@@ -105,6 +105,7 @@ class DataSource:
                     self.h5file,
                     self.kf.scan_rank,
                     use_direct_chunk=use_direct_chunk,
+                    cache_datasets=self.cache_datasets,
                 )
 
     def _add_interleaved_datasets_to_cache(self, use_direct_chunk):
@@ -129,7 +130,7 @@ class DataSource:
 
         current_dataset_index = next(self.kf)
         force_refresh = False
-        if self.max_index < self.kf.current_max:
+        if self.max_index < current_dataset_index:
             self.max_index = self.kf.current_max
             force_refresh = True
 
