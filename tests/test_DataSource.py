@@ -11,11 +11,11 @@ def test_iterates_complete_dataset():
     mds.dataset[...] = 1
     mdsc.dataset[...] = np.arange(10)
 
-    f = {"complete": mds, "data/complete": mdsc, "finished": finished}
+    f = {"data/complete": mdsc}
 
     data_paths = ["data/complete"]
     key_paths = ["complete"]
-    df = DataSource(f, key_paths, data_paths, timeout=0.1, finished_dataset="finished")
+    df = DataSource([mds], f, timeout=0.1, finished_dataset=finished)
 
     val = 0
     for dset in df:
@@ -81,24 +81,9 @@ def test_iterates_complete_interleaved_datasets():
     mdsc3.dataset[...] = np.arange(2, 42, 4)
     mdsc4.dataset[...] = np.arange(3, 42, 4)
 
-    f = {
-        "complete": mds,
-        "data/complete1": mdsc1,
-        "data/complete2": mdsc2,
-        "data/complete3": mdsc3,
-        "data/complete4": mdsc4,
-    }
+    inter = { "data/all" : [ mdsc1, mdsc2, mdsc3, mdsc4]}
 
-    data_paths = {
-        "data/all": [
-            "data/complete1",
-            "data/complete2",
-            "data/complete3",
-            "data/complete4",
-        ]
-    }
-    key_paths = ["complete"]
-    df = DataSource(f, key_paths, None, timeout=0.1, interleaved_paths=data_paths)
+    df = DataSource([mds], None, timeout=0.1, interleaved_datasets=inter)
 
     val = 0
     for dset in df:

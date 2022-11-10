@@ -72,55 +72,49 @@ class DataSource:
 
     def __init__(
         self,
-        h5file,
-        keypaths,
-        dataset_paths,
+        key_datasets,
+        datasets,
         timeout=10,
         finished_dataset=None,
-        cache_datasets=False,
         use_direct_chunk=False,
-        interleaved_paths=None,
+        interleaved_datasets=None,
     ):
-        self.h5file = h5file
-        self.dataset_paths = dataset_paths
-        self.interleaved_paths = interleaved_paths
+  
+        self._datasets = datasets
+        self._interleaved_datasets = interleaved_datasets
         self.max_index = -1
-        self.cache = {}
-        self.cache_datasets = cache_datasets
-        self.interleaved_cache = {}
-        self.kf = KeyFollower(h5file, keypaths, timeout, finished_dataset)
+        self.frame_readers = {}
+        self.interleaved_frame_readers = {}
+        self.kf = KeyFollower(key_datasets, timeout, finished_dataset)
         self.kf.check_datasets()
 
-        if dataset_paths is None and interleaved_paths is None:
+        if datasets is None and interleaved_datasets is None:
             raise RuntimeError("No data specified to follow!")
 
         self._add_datasets_to_cache(use_direct_chunk)
         self._add_interleaved_datasets_to_cache(use_direct_chunk)
 
     def _add_datasets_to_cache(self, use_direct_chunk):
-        if self.dataset_paths is not None:
-            for path in self.dataset_paths:
-                self.cache[path] = FrameReader(
-                    path,
-                    self.h5file,
+        if self._datasets is not None:
+            for path, data in self._datasets.items():
+                self.frame_readers[path] = FrameReader(
+                    data,
                     self.kf.scan_rank,
                     use_direct_chunk=use_direct_chunk,
                 )
 
     def _add_interleaved_datasets_to_cache(self, use_direct_chunk):
-        if self.interleaved_paths is not None:
-            for path, path_list in self.interleaved_paths.items():
-                self.interleaved_cache[path] = []
-                for ds_path in path_list:
+        if self._interleaved_datasets is not None:
+            for path, data_list in self._interleaved_datasets.items():
+                self.interleaved_frame_readers[path] = []
+                for data in data_list:
                     fr = FrameReader(
-                        ds_path,
-                        self.h5file,
+                        data,
                         self.kf.scan_rank,
                         use_direct_chunk=use_direct_chunk,
-                        cache_datasets=self.cache_datasets,
                     )
 
-                    self.interleaved_cache[path].append(fr)
+                    self.interleaved_frame_readers[path].append(fr)
 
     def __iter__(self):
         return self
@@ -143,19 +137,11 @@ class DataSource:
         return output
 
     def _add_datasets_to_output(self, current_dataset_index, output, force_refresh):
-        if self.dataset_paths is None:
+        if self._datasets is None:
             return
 
-        for path in self.dataset_paths:
-            fg = self.cache.get(
-                path,
-                FrameReader(
-                    path,
-                    self.h5file,
-                    self.kf.scan_rank,
-                    cache_datasets=self.cache_datasets,
-                ),
-            )
+        for path in self._datasets.keys():
+            fg = self.frame_readers[path]
             frame, slice_metadata = fg.read_frame(
                 current_dataset_index, force_refresh=force_refresh
             )
@@ -168,10 +154,10 @@ class DataSource:
     def _add_interleaved_datasets_to_output(
         self, current_dataset_index, output, force_refresh
     ):
-        if self.interleaved_paths is None:
+        if self._interleaved_datasets is None:
             return
 
-        for path, frs in self.interleaved_cache.items():
+        for path, frs in self.interleaved_frame_readers.items():
             n_frs = len(frs)
             fr_index = current_dataset_index % (n_frs)
 
@@ -258,23 +244,18 @@ class FrameReader:
     """
 
     def __init__(
-        self, dataset, h5file, scan_rank, use_direct_chunk=False, cache_datasets=False
+        self, dataset, scan_rank, use_direct_chunk=False
     ):
         self.dataset = dataset
-        self.h5file = h5file
         self.scan_rank = scan_rank
         self.use_direct_chunk = use_direct_chunk
-        self.ds = None
-        if cache_datasets:
-            self.ds = self.h5file[self.dataset]
 
         if use_direct_chunk:
-            ds = self.ds if self.ds is not None else self.h5file[self.dataset]
             self.use_direct_chunk = False
-            prop_dcid = ds.id.get_create_plist()
+            prop_dcid = self.dataset.id.get_create_plist()
             if prop_dcid.get_nfilters() == 1 and prop_dcid.get_filter(0)[0] == 32001:
                 chunk = prop_dcid.get_chunk()
-                shape = ds.shape
+                shape = self.dataset.shape
                 frame_rank = len(shape) - scan_rank
                 if shape[-frame_rank:] == chunk[-frame_rank:] and all(
                     [i == 1 for i in chunk[:scan_rank]]
@@ -313,10 +294,10 @@ class FrameReader:
         >>>         frame_list.append(frame)
         """
 
-        ds = self.ds if self.ds is not None else self.h5file[self.dataset]
+        ds = self.dataset
         shape = ds.shape
 
-        if force_refresh and hasattr(ds, "refresh"):
+        if not self.use_direct_chunk and force_refresh and hasattr(ds, "refresh"):
             ds.refresh()
 
         try:
@@ -340,9 +321,9 @@ class FrameReader:
         if self.use_direct_chunk:
             return self.get_frame_direct(ds, pos, rank, slices)
         else:
-            return self.get_frame(ds, pos, rank, slices)
+            return self.get_frame(ds, slices)
 
-    def get_frame(self, ds, pos, rank, slices):
+    def get_frame(self, ds, slices):
         frame = ds[tuple(slices)]
         return frame, tuple(slices[: self.scan_rank])
 
