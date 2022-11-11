@@ -5,14 +5,13 @@ Basic Use
 The DataSource class is the simplest way to interact with a live swmr file. The DataSource is an iterator that provides a map of data for each frame.
 
 
-The DataSource class requires 3 arguments:
+The DataSource class requires 2 arguments:
 
-* An instance of an h5py.File object containing the datasets of interest.
-* A list of paths to *key* datasets (or groups containing only *key* datasets).
-* A list of paths to datasets containing the data you wish to process.
+* A list of *key* datasets.
+* A list of datasets containing the data you wish to process.
 
 The DataSource also has an optional *timeout* argument, which defaults to 10
-second unless otherwise specified, and *finished_dataset* argument, which is the path to the *finished* dataset.
+second unless otherwise specified, and *finished_dataset* argument, which is a *finished* dataset.
 
 The DataSource works out the dimensions of the frame (whether scalar, vector or image) by looking at the difference between the rank of the key and data datasets. It assumes that the data is written row-major and the data frames are in the fastest dimensions.
 
@@ -41,7 +40,10 @@ As an example we will create two small datasets (of the same size but containing
 Then we simply setup a DataSource pointing at the keys and datasets and let it run::
 
     with h5py.File("example.h5", "r") as f:
-        ds = DataSource(f, ["/keys"],["/data/data_1","/data/data_2"])
+        keys = [f["/keys/keys_1"]]
+        datasets = {"/data/data_1" : f["/data/data_1"],
+                    "/data/data_2" : f["/data/data_2"]}
+        ds = DataSource(keys,datasets)
 
         for data_map in ds:
             frame = data_map["/data/data_1"]

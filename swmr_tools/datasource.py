@@ -23,7 +23,7 @@ class DataSource:
     key_datasets: list
         A list of key datasets from the hdf5 file.
 
-    dataset_paths: dict
+    datasets: dict
         A dictionary of paths (as strings) to datasets that you wish
         to return frames from.
 
