@@ -1,7 +1,7 @@
 from .keyfollower import KeyFollower
 import logging
 import numpy as np
-from .utils import get_position, create_dataset, append_data
+from .utils import get_position, create_dataset, append_data, refresh_dataset
 import sys
 from time import sleep
 
@@ -281,16 +281,15 @@ class FrameReader:
         ds = self.dataset
         shape = ds.shape
 
-        if force_refresh and hasattr(ds, "refresh"):
-            ds.refresh()
+        if force_refresh:
+            refresh_dataset(ds)
 
         try:
             # might fail if dataset is cached
             pos = self.get_pos(index, shape)
         except ValueError:
             # refresh dataset and try again
-            if hasattr(ds, "refresh"):
-                ds.refresh()
+            refresh_dataset(ds)
 
             shape = ds.shape
             pos = self.get_pos(index, shape)
@@ -321,8 +320,7 @@ class FrameReader:
         except Exception:
             # let the file system catch up
             sleep(1)
-            if hasattr(ds, "refresh"):
-                ds.refresh()
+            refresh_dataset(ds)
             out = ds.id.read_direct_chunk(chunk_pos)
 
         decom = blosc.decompress(out[1])

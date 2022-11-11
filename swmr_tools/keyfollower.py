@@ -1,5 +1,6 @@
 import numpy as np
 import time
+from .utils import refresh_dataset
 
 import logging
 
@@ -52,7 +53,7 @@ class KeyFollower:
         self.current_max = -1
         self.timeout = timeout
         self.timed_out = False
-        self.start_time = None
+        self.end_time = None
         self.key_datasets = key_datasets
         self.finished_dataset = finished_dataset
         self._finish_tag = False
@@ -125,7 +126,7 @@ class KeyFollower:
 
     def _timer_reset(self):
         # Hidden method, restarts timer for timeout method
-        self.start_time = time.time()
+        self.end_time = time.time() + self.timeout
 
     def _is_next(self):
 
@@ -161,18 +162,17 @@ class KeyFollower:
     def _get_keys(self):
         kds = []
         for k in self.key_datasets:
-            if hasattr(k, "refresh"):
-                k.refresh()
+            refresh_dataset(k)
             d = k[...].flatten()
             kds.append(d)
 
         return kds
 
     def _timeout(self):
-        if not self.start_time:
+        if not self.end_time:
             return False
 
-        if time.time() > (self.start_time + self.timeout):
+        if time.time() > self.end_time:
             self.timed_out = True
             return True
         else:
@@ -182,8 +182,7 @@ class KeyFollower:
         if self.finished_dataset is None:
             return
 
-        if hasattr(self.finished_dataset, "refresh"):
-            self.finished_dataset.refresh()
+        refresh_dataset(self.finished_dataset)
 
         if self.finished_dataset.size != 1:
 
