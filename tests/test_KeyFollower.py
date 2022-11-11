@@ -5,15 +5,15 @@ import numpy as np
 
 def test_first_frame():
 
-    key_paths = ["k1", "k2", "k3"]
     shape = [10]
 
     k1 = utils.make_mock(shape)
     k2 = utils.make_mock(shape)
     k3 = utils.make_mock(shape)
 
-    f = {"k1": k1, "k2": k2, "k3": k3}
-    kf = KeyFollower(f, key_paths, timeout=0.1)
+    ks = [k1, k2, k3]
+
+    kf = KeyFollower(ks, timeout=0.1)
     kf.check_datasets()
 
     assert kf.scan_rank == 1
@@ -68,14 +68,13 @@ def test_first_frame():
 
 def test_first_frame_jagged():
 
-    key_paths = ["k1", "k2", "k3"]
-
     k1 = utils.make_mock([2])
     k2 = utils.make_mock([2])
     k3 = utils.make_mock([1], maxshape=[2])
 
-    f = {"k1": k1, "k2": k2, "k3": k3}
-    kf = KeyFollower(f, key_paths, timeout=0.1)
+    ks = [k1, k2, k3]
+
+    kf = KeyFollower(ks, timeout=0.1)
     kf.check_datasets()
 
     assert kf.maxshape == [2]
@@ -111,13 +110,10 @@ def test_first_frame_jagged():
 
 def test_iterates_complete_dataset():
 
-    key_paths = ["complete"]
-
     mds = utils.make_mock()
     mds.dataset = mds.dataset + 1
 
-    f = {"complete": mds}
-    kf = KeyFollower(f, key_paths, timeout=0.1)
+    kf = KeyFollower([mds], timeout=0.1)
     kf.check_datasets()
 
     assert kf.scan_rank == 2
@@ -139,9 +135,7 @@ def test_iterates_incomplete_dataset():
         :,
     ] = 1
 
-    key_paths = ["incomplete"]
-    f = {"incomplete": mds}
-    kf = KeyFollower(f, key_paths, timeout=0.1)
+    kf = KeyFollower([mds], timeout=0.1)
     kf.check_datasets()
     current_key = 0
     for key in kf:
@@ -161,9 +155,7 @@ def test_iterates_multiple_incomplete_dataset():
         :,
     ] = 1
 
-    key_paths = ["complete", "incomplete"]
-    f = {"complete": mds, "incomplete": mdsi}
-    kf = KeyFollower(f, key_paths, timeout=0.1)
+    kf = KeyFollower([mds, mdsi], timeout=0.1)
     kf.check_datasets()
     current_key = 0
     for key in kf:
@@ -177,9 +169,7 @@ def test_iterates_snake_scan():
     mds.dataset[:2, :, :, :] = 1
     mds.dataset[2, 1:, :, :] = 1
 
-    key_paths = ["incomplete"]
-    f = {"incomplete": mds}
-    kf = KeyFollower(f, key_paths, timeout=0.1)
+    kf = KeyFollower([mds], timeout=0.1)
     current_key = 0
     for key in kf:
         current_key += 1
@@ -191,9 +181,7 @@ def test_reads_updates():
     mds = utils.make_mock()
     mds.dataset.reshape((-1))[:26] = 1
 
-    key_paths = ["incomplete"]
-    f = {"incomplete": mds}
-    kf = KeyFollower(f, key_paths, timeout=0.1)
+    kf = KeyFollower([mds], timeout=0.1)
     current_key = 0
     for key in kf:
         current_key += 1
@@ -209,9 +197,7 @@ def test_refresh_max():
     mds = utils.make_mock()
     mds.dataset.reshape((-1))[:26] = 1
 
-    key_paths = ["incomplete"]
-    f = {"incomplete": mds}
-    kf = KeyFollower(f, key_paths, timeout=0.1)
+    kf = KeyFollower([mds], timeout=0.1)
     kf.check_datasets()
     current_key = 0
 
@@ -243,9 +229,7 @@ def test_update_changes_shape():
     mds = utils.make_mock(shape=[2, 10, 1, 1])
     mds.dataset[...] = 1
 
-    key_paths = ["incomplete"]
-    f = {"incomplete": mds}
-    kf = KeyFollower(f, key_paths, timeout=0.1)
+    kf = KeyFollower([mds], timeout=0.1)
     current_key = 0
     for key in kf:
         current_key += 1
@@ -269,9 +253,7 @@ def test_multiple_keys_from_node():
         :,
     ] = 1
 
-    key_paths = ["keys"]
-    f = {"keys": ["a", "b"], "keys/a": mds, "keys/b": mdsi}
-    kf = KeyFollower(f, key_paths, timeout=0.1)
+    kf = KeyFollower([mds, mdsi], timeout=0.1)
     kf.check_datasets()
     current_key = 0
     for key in kf:
@@ -281,24 +263,21 @@ def test_multiple_keys_from_node():
 
 def test_finished_dataset():
 
-    data = "data"
-    finished = "finished"
-    key_paths = [data]
-
     mds = utils.make_mock()
     mds.dataset = mds.dataset + 1
     mfds = utils.make_mock(shape=[1])
     mfds.dataset = np.array([0])
-    f = {data: mds, finished: mfds}
-    kf = KeyFollower(f, key_paths, timeout=0.1, finished_dataset=finished)
+
+    kf = KeyFollower([mds], timeout=0.1, finished_dataset=mfds)
     assert not kf.is_finished()
 
     mfds.dataset = np.array([1])
-    assert kf.is_finished()
+    assert not kf.is_finished()
+    assert kf.finished_set
 
     # can't have a finished array with more than one element
     mfds = utils.make_mock(shape=[4])
     mfds.dataset = mfds.dataset + 1
-    f = {data: mds, finished: mfds}
-    kf = KeyFollower(f, key_paths, timeout=0.1, finished_dataset=finished)
+
+    kf = KeyFollower([mds], timeout=0.1, finished_dataset=mfds)
     assert not kf.is_finished()

@@ -10,13 +10,13 @@ def get_position(index, shape, scan_rank):
     """
     Returns the position in the scan associated with the given index
 
-            Parameters:
-                    index (int): Flattened index of scan point
-                    shape (array): Shape of dataset of interest
-                    scan_rank (int): Rank of scan (must be <= len(shape))
+         Parameters:
+            index (int): Flattened index of scan point
+            shape (array): Shape of dataset of interest
+            scan_rank (int): Rank of scan (must be <= len(shape))
 
-            Returns:
-                    position (tuple): Ndimensional position in scan associated with the index
+        Returns:
+            position (tuple): Ndimensional position in scan associated with the index
     Examples
     --------
 
@@ -35,13 +35,13 @@ def get_position_snake(index, shape, scan_rank):
     """
     Returns the position in a snake scan associated with the given index
 
-            Parameters:
-                    index (int): Flattened index of scan point
-                    shape (array): Shape of dataset of interest
-                    scan_rank (int): Rank of scan (must be <= len(shape))
+        Parameters:
+            index (int): Flattened index of scan point
+            shape (array): Shape of dataset of interest
+            scan_rank (int): Rank of scan (must be <= len(shape))
 
-            Returns:
-                    position (tuple): Ndimensional position in scan associated with the index
+        Returns:
+            position (tuple): Ndimensional position in scan associated with the index
     Examples
     --------
 
@@ -65,16 +65,16 @@ def get_row_slice(index, shape, scan_rank):
     """
     Returns a slice tuple corresponding to the row of the shape that contains the index
 
-            Parameters:
-                    index (int): Flattened index of scan point
-                    shape (array): Shape of dataset of interest
-                    scan_rank (int): Rank of scan (must be <= len(shape))
+        Parameters:
+            index (int): Flattened index of scan point
+            shape (array): Shape of dataset of interest
+            scan_rank (int): Rank of scan (must be <= len(shape))
 
-            Returns:
-                    row_slice (tuple): tuple of slices (same length as scan_rank) corresponding to the row containing the index
+        Returns:
+            row_slice (tuple): tuple of slices (same length as scan_rank) corresponding to the row containing the index
+
     Examples
     --------
-
 
     >>> utils.get_row_slice(3, [3,4,5], 2)
     (slice(0,1,None),slice(None,None,None)
@@ -97,15 +97,15 @@ def create_dataset(data, scan_maxshape, fh, path, **kwargs):
     """
     Convenience method to create a hdf5 dataset corresponding to data being the first dataset in a scan with shape scan_maxshape
 
-            Parameters:
-                    data (numpy array): First dataset to save in hdf5, corresponding to the first point in the scan
-                    scan_maxshape (array): Shape of the scan, for example [1000] for a stack or [100,100] for a grid
-                    fh (h5py File or Group): File or Group to create dataset in
-                    path (str): path to save the dataset under
-                    kwargs: forwared to the h5py create dataset method allowing chunking and compression to be specified
+        Parameters:
+            data (numpy array): First dataset to save in hdf5, corresponding to the first point in the scan
+            scan_maxshape (array): Shape of the scan, for example [1000] for a stack or [100,100] for a grid
+            fh (h5py File or Group): File or Group to create dataset in
+            path (str): path to save the dataset under
+            kwargs: forwared to the h5py create dataset method allowing chunking and compression to be specified
 
-            Returns:
-                    dataset (h5py Dataset): the result dataset
+        Returns:
+            dataset (h5py Dataset): the result dataset
 
     """
 
@@ -129,10 +129,10 @@ def append_data(data, slice_metadata, dataset):
     """
     Convenience method to append data to a hdf5 dataset generated in create_dataset
 
-            Parameters:
-                    data (numpy array): dataset to save in hdf5, corresponding to the n-th point in the scan
-                    slice_metadata (array): Slice describing current position in scan
-                    dataset (h5py Dataset): Dataset to set slice in
+        Parameters:
+            data (numpy array): dataset to save in hdf5, corresponding to the n-th point in the scan
+            slice_metadata (array): Slice describing current position in scan
+            dataset (h5py Dataset): Dataset to set slice in
 
     """
     ds = tuple(slice(0, s, 1) for s in data.shape)
@@ -148,11 +148,11 @@ def copy_nexus_axes(nxd_in, nxd_out, scan_rank, frame_axes=None):
     """
     Copy the axes and associated attributes from the input NXdata to the output NXdata
 
-            Parameters:
-                    nxd_in (h5py Group): input NXdata to copy from
-                    nxd_out (h5py Group): output NXdata to copy to
-                    scan_rank (int): number of scan dimensions
-                    frame_axes(String array): additional axes for data frame
+        Parameters:
+            nxd_in (h5py Group): input NXdata to copy from
+            nxd_out (h5py Group): output NXdata to copy to
+            scan_rank (int): number of scan dimensions
+            frame_axes(String array): additional axes for data frame
 
     """
     axout = ["."] * scan_rank
@@ -177,10 +177,10 @@ def copy_nexus_axes(nxd_in, nxd_out, scan_rank, frame_axes=None):
 def create_nxdata(e, name, default=True):
     """
     Create NXdata group
-            Parameters:
-                    e (h5py Group): group to create NXdata in
-                    name (str): Name of NXdata group
-                    default (boolean): add default tag to e pointing at new NXdata
+        Parameters:
+            e (h5py Group): group to create NXdata in
+            name (str): Name of NXdata group
+            default (boolean): add default tag to e pointing at new NXdata
 
     """
     return _create_nexus_with_default(e, name, "NXdata", default=default)
@@ -189,10 +189,10 @@ def create_nxdata(e, name, default=True):
 def create_nxentry(fh, name, default=True):
     """
     Create NXentry group
-            Parameters:
-                    fh (h5py Group): group to create NXentry in
-                    name (str): Name of NXentry group
-                    default (boolean): add default tag to parent pointing at new NXentry
+        Parameters:
+            fh (h5py Group): group to create NXentry in
+            name (str): Name of NXentry group
+            default (boolean): add default tag to parent pointing at new NXentry
 
     """
     return _create_nexus_with_default(fh, name, "NXentry", default=default)
@@ -211,9 +211,9 @@ def check_file_readable(path, datasets, timeout=10, retrys=5):
     """
     Check all datasets in a file can be read, used to determine if all files are readable if main file contains links
 
-            Parameters:
-                    path (str): path to hdf5 file being checked
-                    datasets (array): List of paths to datasets in the file
+        Parameters:
+            path (str): path to hdf5 file being checked
+            datasets (array): List of paths to datasets in the file
 
     """
     start = time.time()
@@ -251,3 +251,16 @@ def _get_slices_from_position(pos, slices):
     slices_out = [slice(p, p + 1, 1) for p in pos]
     slices_out += slices[1:]
     return slices_out
+
+
+def refresh_dataset(dataset):
+    """
+    Check if a dataset has the refresh method and then call it. Used
+    to update hdf5 datasets in swmr mode.
+        Parameters:
+            dataset (dataset): the dataset to refresh
+
+    """
+
+    if hasattr(dataset, "refresh"):
+        dataset.refresh()

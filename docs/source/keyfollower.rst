@@ -32,9 +32,8 @@ keys ::
         f["/keys"].create_dataset("key_1", data = complete_key_array)
 
 Next, we shall create an instance of the KeyFollower class and demonstrate a
-simple example of its use. At a minimum we must pass the h5py.File object 
-we wish to read from and a list containing the paths to the hdf5 groups 
-containing our keys.
+simple example of its use. At a minimum we must pass the key datasets 
+we wish to read from.
 
 Shown below is an example of using an instance of KeyFollower within a for loop, 
 as you would with any standard iterable object. For this basic example of a 
@@ -43,7 +42,8 @@ expected ::
 
     # using an instance of Follower in a for loop
     with h5py.File("test_file.h5", "r", swmr = True) as f:
-        kf = KeyFollower(f, ["/keys"])
+        keys = [f["/keys/key_1"]]
+        kf = KeyFollower(keys)
         for key in kf:
             print(key)
     0
@@ -55,7 +55,7 @@ expected ::
     6
     7
             
-As with the DataSource, the timeout and finished_dataset path can be set on contruction of the KeyFollower.
+As with the DataSource, the timeout and finished_dataset can be set on contruction of the KeyFollower.
 
 Running the KeyFollower should not be computationally expensive, because all of the *key* datasets should be relatively small, allowing the KeyFollower to follow a very rapid scan.
 
@@ -64,8 +64,8 @@ The DataSource class is just a KeyFollower that uses a FrameReader to read a fra
 FrameReader
 -----------
 
-The FrameReader class is constructed using the path to the dataset to read, the file handle to the hdf5 file open in swmr read mode, and the rank of the scan (1 for a stack of images, 2 for a grid scan etc).
+The FrameReader class is constructed using the dataset to read, and the rank of the scan (1 for a stack of images, 2 for a grid scan etc).
 
-the read_frame(index) method then reads the frame corresponding to the index *i* which can be provided by the KeyFollower.
+The read_frame(index) method then reads the frame corresponding to the index *i* which can be provided by the KeyFollower.
 
 

@@ -1,5 +1,6 @@
 import numpy as np
 import time
+from .utils import refresh_dataset
 
 import logging
 
@@ -11,21 +12,17 @@ class KeyFollower:
 
     Parameters
     ----------
-    h5file: h5py.File
-        Instance of h5py.File object. Choose the file containing data you wish
-        to follow.
 
-    keypaths: list
-        A list of paths (as strings) to key datasets in the hdf5 file. Can also be
-        the path to groups, but the groups must contain only key datasets
+    key_datasets: list
+        A list of key datasets in the hdf5 file.
 
     timeout: int (optional)
         The maximum time allowed for a dataset to update before the timeout
         termination condition is trigerred and iteration is halted. If a value
         is not set this will default to 10 seconds.
 
-    finished_dataset: string (optional)
-        Path to a scalar hdf5 dataset which is zero when the file is being
+    finished_dataset: dataset (optional)
+        A scalar hdf5 dataset which is zero when the file is being
         written to and non-zero when the file is complete. Used to stop
         the iterator without waiting for the timeout
 
@@ -38,10 +35,11 @@ class KeyFollower:
     >>> # open hdf5 file using context manager with swmr mode activated
     >>> with h5py.File("/home/documents/work/data/example.h5", "r", swmr = True) as f:
     >>>     # create an instance of the Follower object to iterate through
-    >>>     kf = KeyFollower(f,
-    >>>                   ['/path/to/key/one', '/path/to/key/two'],
+    >>>     keys = [f["key1"], f["key2]]
+    >>>     finished = f["finished"]
+    >>>     kf = KeyFollower(keys,
     >>>                   timeout = 10,
-    >>>                   finished_dataset = "/path/to/finished")
+    >>>                   finished_dataset = finished)
     >>>     # iterate through the iterator as with a standard iterator/generator object
     >>>     for key in kf:
     >>>         print(key)
@@ -50,16 +48,16 @@ class KeyFollower:
 
     """
 
-    def __init__(self, h5file, keypaths, timeout=10, finished_dataset=None):
-        self.h5file = h5file
+    def __init__(self, key_datasets, timeout=10, finished_dataset=None):
         self.current_key = -1
         self.current_max = -1
         self.timeout = timeout
         self.timed_out = False
-        self.start_time = None
-        self.key_datasets = keypaths
+        self.end_time = None
+        self.key_datasets = key_datasets
         self.finished_dataset = finished_dataset
         self._finish_tag = False
+        self.finished_set = False
         self._check_successful = False
         self.scan_rank = -1
         self.maxshape = None
@@ -73,12 +71,9 @@ class KeyFollower:
 
         rank = -1
 
-        key_list = self._get_key_list()
-
-        for k in key_list:
+        for k in self.key_datasets:
             # do some exception checking here
-            tmp = self.h5file[k]
-            r = self._get_rank(tmp.maxshape)
+            r = self._get_rank(k.maxshape)
 
             if rank == -1:
                 rank = r
@@ -87,28 +82,13 @@ class KeyFollower:
                 raise RuntimeError("Key datasets must have the same rank!")
 
             if self.maxshape is None:
-                self.maxshape = tmp.maxshape[:rank]
+                self.maxshape = k.maxshape[:rank]
             else:
-                if np.all(self.maxshape != tmp.maxshape[:rank]):
+                if np.all(self.maxshape != k.maxshape[:rank]):
                     logger.warning("Max shape not consistent in keys")
-
-        if self.finished_dataset is not None:
-            # just check read here
-            tmp = self.h5file[self.finished_dataset]
 
         self.scan_rank = rank
         logger.debug("Dataset checks passed")
-
-    def _get_key_list(self):
-        key_list = self.key_datasets
-        if len(key_list) == 1 and not hasattr(self.h5file[key_list[0]], "shape"):
-            k0 = key_list[0]
-            ks = []
-            for k in self.h5file[k0]:
-                ks.append(k0 + "/" + k)
-            return ks
-        else:
-            return key_list
 
     def _get_rank(self, max_shape):
         rank = len(max_shape)
@@ -146,7 +126,7 @@ class KeyFollower:
 
     def _timer_reset(self):
         # Hidden method, restarts timer for timeout method
-        self.start_time = time.time()
+        self.end_time = time.time() + self.timeout
 
     def _is_next(self):
 
@@ -181,20 +161,18 @@ class KeyFollower:
 
     def _get_keys(self):
         kds = []
-        for key_path in self._get_key_list():
-            dataset = self.h5file[key_path]
-            if hasattr(dataset, "refresh"):
-                dataset.refresh()
-            d = dataset[...].flatten()
+        for k in self.key_datasets:
+            refresh_dataset(k)
+            d = k[...].flatten()
             kds.append(d)
 
         return kds
 
     def _timeout(self):
-        if not self.start_time:
+        if not self.end_time:
             return False
 
-        if time.time() > self.start_time + self.timeout:
+        if time.time() > self.end_time:
             self.timed_out = True
             return True
         else:
@@ -202,21 +180,25 @@ class KeyFollower:
 
     def _check_finished_dataset(self):
         if self.finished_dataset is None:
-            return False
+            return
 
-        f = self.h5file[self.finished_dataset]
-        if hasattr(f, "refresh"):
-            f.refresh()
+        refresh_dataset(self.finished_dataset)
 
-        if f.size != 1:
+        if self.finished_dataset.size != 1:
 
             logger.warning(
                 f"finished dataset ({self.finished_dataset}) is non-singular"
             )
-            return False
+            return
 
-        # returning True means we're finished
-        return not f[0] == 0
+        # set on a attribute so the timeout loop runs once after
+        # finished is set.
+        # this is important due to race conditions between the final
+        # keys being readable and the finished flag being set
+        self.finished_set = not self.finished_dataset[0] == 0
+
+        if self.finished_set:
+            logger.debug("Finish flag set after finished dataset check")
 
     def is_finished(self):
         """Returns True if the KeyFollower instance has completed its iteration"""
@@ -228,11 +210,11 @@ class KeyFollower:
             logger.debug("Finished on timeout")
             return True
 
-        if self._check_finished_dataset():
-            logger.debug("Finished on finished dataset check")
-            return True
+        if not self.finished_set:
+            self._check_finished_dataset()
+            return False
 
-        return False
+        return self.finished_set
 
     def get_current_max(self):
         """Returns the current maximum key"""
@@ -248,11 +230,9 @@ class KeyFollower:
 
 
 class RowKeyFollower:
-    def __init__(
-        self, h5file, keypaths, timeout=10, finished_dataset=None, row_size=None
-    ):
+    def __init__(self, key_datasets, timeout=10, finished_dataset=None, row_size=None):
         self.inner_key_follower = KeyFollower(
-            h5file, keypaths, timeout=timeout, finished_dataset=finished_dataset
+            key_datasets, timeout=timeout, finished_dataset=finished_dataset
         )
         self.row_size = row_size
         self.scan_rank = -1
