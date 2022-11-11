@@ -19,7 +19,7 @@ def test_multiple_keys(tmp_path):
 
     with h5py.File(f, "r") as fh:
 
-        keys = [fh["complete"], fh["incomplete"]]        
+        keys = [fh["complete"], fh["incomplete"]]
 
         kf = KeyFollower(keys, timeout=0.1)
         kf.check_datasets()
@@ -43,7 +43,7 @@ def test_complete_keys(tmp_path):
         fh.create_dataset("complete2", data=d1, maxshape=(10,))
 
     with h5py.File(f, "r") as fh:
-        keys = [fh["complete"], fh["complete2"]]  
+        keys = [fh["complete"], fh["complete2"]]
         kf = KeyFollower(keys, timeout=0.1)
         kf.check_datasets()
 
@@ -72,8 +72,10 @@ def inner_data_read(tmp_path, direct):
 
     with h5py.File(f, "r") as fh:
 
-        keys = [fh["/key"],]
-        data = {"/data": fh["/data"]}  
+        keys = [
+            fh["/key"],
+        ]
+        data = {"/data": fh["/data"]}
 
         df = DataSource(
             keys,
@@ -103,8 +105,10 @@ def test_use_case_example(tmp_path):
 
     with h5py.File(f, "r") as fh, h5py.File(o, "w") as oh:
 
-        keys = [fh["/key"],]
-        data = {"/data": fh["/data"]}  
+        keys = [
+            fh["/key"],
+        ]
+        data = {"/data": fh["/data"]}
         df = DataSource(keys, data, timeout=1)
 
         output = None
@@ -137,8 +141,10 @@ def test_mock_scan(tmp_path):
     utils.check_file_readable(f, ["/data", "/key"], timeout=5)
 
     with h5py.File(f, "r", libver="latest", swmr=True) as fh:
-        keys = [fh["/key"],]
-        data = {"/data": fh["/data"]}  
+        keys = [
+            fh["/key"],
+        ]
+        data = {"/data": fh["/data"]}
         finished = fh["finished"]
         df = DataSource(keys, data, timeout=1, finished_dataset=finished)
 
@@ -163,10 +169,12 @@ def test_mock_grid_scan(tmp_path):
 
     with h5py.File(f, "r", libver="latest", swmr=True) as fh:
 
-        keys = [fh["/key"],]
-        data = {"/data": fh["/data"]} 
+        keys = [
+            fh["/key"],
+        ]
+        data = {"/data": fh["/data"]}
         finished = fh["finished"]
-        df = DataSource(keys, data, timeout=3,finished_dataset=finished)
+        df = DataSource(keys, data, timeout=3, finished_dataset=finished)
 
         count = 1
 

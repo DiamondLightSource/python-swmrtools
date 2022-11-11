@@ -155,7 +155,7 @@ def test_iterates_multiple_incomplete_dataset():
         :,
     ] = 1
 
-    kf = KeyFollower([mds,mdsi], timeout=0.1)
+    kf = KeyFollower([mds, mdsi], timeout=0.1)
     kf.check_datasets()
     current_key = 0
     for key in kf:
@@ -253,7 +253,7 @@ def test_multiple_keys_from_node():
         :,
     ] = 1
 
-    kf = KeyFollower([mds,mdsi], timeout=0.1)
+    kf = KeyFollower([mds, mdsi], timeout=0.1)
     kf.check_datasets()
     current_key = 0
     for key in kf:
@@ -263,21 +263,21 @@ def test_multiple_keys_from_node():
 
 def test_finished_dataset():
 
-
     mds = utils.make_mock()
     mds.dataset = mds.dataset + 1
     mfds = utils.make_mock(shape=[1])
     mfds.dataset = np.array([0])
- 
+
     kf = KeyFollower([mds], timeout=0.1, finished_dataset=mfds)
     assert not kf.is_finished()
 
     mfds.dataset = np.array([1])
-    assert kf.is_finished()
+    assert not kf.is_finished()
+    assert kf.finished_set
 
     # can't have a finished array with more than one element
     mfds = utils.make_mock(shape=[4])
     mfds.dataset = mfds.dataset + 1
-    
+
     kf = KeyFollower([mds], timeout=0.1, finished_dataset=mfds)
     assert not kf.is_finished()

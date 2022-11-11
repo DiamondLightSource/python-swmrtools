@@ -45,7 +45,7 @@ def test_framereader_image():
 
 
 def test_framereader_image_grid():
-    
+
     r = np.arange(6000)
     r = r.reshape((3, 10, 10, 20))
 

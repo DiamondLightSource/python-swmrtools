@@ -72,7 +72,7 @@ class DataSource:
         use_direct_chunk=False,
         interleaved_datasets=None,
     ):
-  
+
         self._datasets = datasets
         self._interleaved_datasets = interleaved_datasets
         self.max_index = -1
@@ -116,7 +116,7 @@ class DataSource:
 
         current_dataset_index = next(self.kf)
         force_refresh = False
-        if self.max_index < self.kf.current_max:
+        if self.max_index < current_dataset_index:
             self.max_index = self.kf.current_max
             force_refresh = True
 
@@ -181,7 +181,7 @@ class DataSource:
         return append_data(data, slice_metadata, dataset)
 
     def is_scan_finished(self):
-        return self.kf._finish_tag
+        return self.kf.finished_set
 
     def has_timed_out(self):
         return self.kf.timed_out
@@ -229,9 +229,7 @@ class FrameReader:
 
     """
 
-    def __init__(
-        self, dataset, scan_rank, use_direct_chunk=False
-    ):
+    def __init__(self, dataset, scan_rank, use_direct_chunk=False):
         self.dataset = dataset
         self.scan_rank = scan_rank
         self.use_direct_chunk = use_direct_chunk
@@ -283,7 +281,7 @@ class FrameReader:
         ds = self.dataset
         shape = ds.shape
 
-        if not self.use_direct_chunk and force_refresh and hasattr(ds, "refresh"):
+        if force_refresh and hasattr(ds, "refresh"):
             ds.refresh()
 
         try:

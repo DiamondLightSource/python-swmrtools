@@ -56,6 +56,7 @@ class KeyFollower:
         self.key_datasets = key_datasets
         self.finished_dataset = finished_dataset
         self._finish_tag = False
+        self.finished_set = False
         self._check_successful = False
         self.scan_rank = -1
         self.maxshape = None
@@ -166,12 +167,12 @@ class KeyFollower:
             kds.append(d)
 
         return kds
- 
+
     def _timeout(self):
         if not self.start_time:
             return False
 
-        if time.time() > self.start_time + self.timeout:
+        if time.time() > (self.start_time + self.timeout):
             self.timed_out = True
             return True
         else:
@@ -179,7 +180,7 @@ class KeyFollower:
 
     def _check_finished_dataset(self):
         if self.finished_dataset is None:
-            return False
+            return
 
         if hasattr(self.finished_dataset, "refresh"):
             self.finished_dataset.refresh()
@@ -189,10 +190,16 @@ class KeyFollower:
             logger.warning(
                 f"finished dataset ({self.finished_dataset}) is non-singular"
             )
-            return False
+            return
 
-        # returning True means we're finished
-        return not self.finished_dataset[0] == 0
+        # set on a attribute so the timeout loop runs once after
+        # finished is set.
+        # this is important due to race conditions between the final
+        # keys being readable and the finished flag being set
+        self.finished_set = not self.finished_dataset[0] == 0
+
+        if self.finished_set:
+            logger.debug("Finish flag set after finished dataset check")
 
     def is_finished(self):
         """Returns True if the KeyFollower instance has completed its iteration"""
@@ -204,11 +211,11 @@ class KeyFollower:
             logger.debug("Finished on timeout")
             return True
 
-        if self._check_finished_dataset():
-            logger.debug("Finished on finished dataset check")
-            return True
+        if not self.finished_set:
+            self._check_finished_dataset()
+            return False
 
-        return False
+        return self.finished_set
 
     def get_current_max(self):
         """Returns the current maximum key"""
@@ -224,9 +231,7 @@ class KeyFollower:
 
 
 class RowKeyFollower:
-    def __init__(
-        self, key_datasets, timeout=10, finished_dataset=None, row_size=None
-    ):
+    def __init__(self, key_datasets, timeout=10, finished_dataset=None, row_size=None):
         self.inner_key_follower = KeyFollower(
             key_datasets, timeout=timeout, finished_dataset=finished_dataset
         )

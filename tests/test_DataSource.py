@@ -12,9 +12,6 @@ def test_iterates_complete_dataset():
     mdsc.dataset[...] = np.arange(10)
 
     f = {"data/complete": mdsc}
-
-    data_paths = ["data/complete"]
-    key_paths = ["complete"]
     df = DataSource([mds], f, timeout=0.1, finished_dataset=finished)
 
     val = 0
@@ -29,7 +26,7 @@ def test_iterates_complete_dataset():
 
     assert val == 10
 
-    assert df.is_scan_finished()
+    assert not df.is_scan_finished()
     assert df.has_timed_out()
 
     finished.dataset[0] = 1
@@ -65,7 +62,7 @@ def test_iterates_complete_dataset():
     assert val == 9
 
     assert df.is_scan_finished()
-    assert df.has_timed_out()
+    assert not df.has_timed_out()
 
 
 def test_iterates_complete_interleaved_datasets():
@@ -81,7 +78,7 @@ def test_iterates_complete_interleaved_datasets():
     mdsc3.dataset[...] = np.arange(2, 42, 4)
     mdsc4.dataset[...] = np.arange(3, 42, 4)
 
-    inter = { "data/all" : [ mdsc1, mdsc2, mdsc3, mdsc4]}
+    inter = {"data/all": [mdsc1, mdsc2, mdsc3, mdsc4]}
 
     df = DataSource([mds], None, timeout=0.1, interleaved_datasets=inter)
 

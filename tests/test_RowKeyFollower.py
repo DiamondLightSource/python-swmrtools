@@ -4,7 +4,6 @@ import utils
 
 def test_iterates_complete_dataset():
 
-
     mds = utils.make_mock()
     mds.dataset = mds.dataset + 1
 
