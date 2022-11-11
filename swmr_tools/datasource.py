@@ -20,32 +20,23 @@ class DataSource:
     Parameters
     ----------
 
-    h5file: h5py.File
-        Instance of h5py.File object. Choose the file containing data you wish
-        to follow.
+    key_datasets: list
+        A list of key datasets from the hdf5 file.
 
-    keypaths: list
-        A list of paths (as strings) to key datasets in the hdf5 file. Can also be
-        the path to groups, but the groups must contain only key datasets.
-
-    dataset_paths: list
-        A list of paths (as strings) to datasets in h5file that you wish
-        to return frames from (Note: paths must be to the dataset and not
-                               to the group containing it).
+    dataset_paths: dict
+        A dictionary of paths (as strings) to datasets that you wish
+        to return frames from.
 
     timeout: int (optional)
         The maximum time allowed for a dataset to update before the timeout
         termination condition is triggered and iteration is halted. If a value
         is not set this will default to 10 seconds.
 
-    finished_dataset: string (optional)
+    finished_dataset: dataset (optional)
         Path to a scalar hdf5 dataset which is zero when the file is being
         written to and non-zero when the file is complete. Used to stop
         the iterator without waiting for the timeout.
 
-    cache_dataset: bool (optional)
-        Hold a reference to the dataset. Can lead to an increase in read performance,
-        but can cause issues with SWMR and VDS.
 
     use_direct_chunk: bool (optional)
         If dataset chunking is aligned to a single frame, and data is blosc
@@ -53,7 +44,7 @@ class DataSource:
         for performance.
 
     interleaved_paths: dict (optional)
-        A dictionary of string to lists of dataset paths. Where frames are written by multiple file
+        A dictionary of string to lists of datasets. Where frames are written by multiple file
         writers in an interleaved fashion, this will take frames alternating from each
         dataset in the list. Key dataset should be a VDS of interleaved keys. For use where
         direct chunk read is required but not possible through a VDS stack of frames. Only
@@ -64,7 +55,9 @@ class DataSource:
     --------
 
     >>> with h5py.File("/home/documents/work/data/example.h5", "r", swmr = True) as f:
-    >>>     df = DataSource(f, path_to_key_group, path_to_datasets)
+    >>>     keys = [f["key"]]
+    >>>     data = {"data" : f["data"]}
+    >>>     df = DataSource([keys], data, path_to_datasets)
     >>>     for frame_dict in df:
     >>>         print(frame_dict)
 
@@ -210,12 +203,8 @@ class FrameReader:
 
     Parameters
     ----------
-    dataset : str
-        The full path to the dataset to extract frames from in the hdf5_File
-
-    h5file : h5py.File
-        Instance of h5py.File object. Choose the file containing dataset you
-        want to extract frames from.
+    dataset : dataset
+        The dataset to extract frames from in the hdf5_File
 
     scan_rank: int
         The rank of the "non-data-frame" part of the N-dimensional dataset
@@ -229,16 +218,13 @@ class FrameReader:
         compressed, will use direct chunk read and compression outside of h5py
         for performance.
 
-    cache_datasets: bool (optional)
-        Hold a reference to the dataset. Can lead to an increase in read performance,
-        but can cause issues with SWMR and VDS.
-
     Examples
     --------
 
     >>> #open and hdf5 file using context manager
     >>> with h5py.File("/path/to/file") as f:
-    >>>     fr = FrameReader(f, "/path/to/dataset", 2)
+    >>>     data = f["data"]
+    >>>     fr = FrameReader(data, 2)
     >>>     #call methods on fg to get the data that you want
 
     """

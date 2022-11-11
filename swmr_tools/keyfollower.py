@@ -11,21 +11,17 @@ class KeyFollower:
 
     Parameters
     ----------
-    h5file: h5py.File
-        Instance of h5py.File object. Choose the file containing data you wish
-        to follow.
 
-    keypaths: list
-        A list of paths (as strings) to key datasets in the hdf5 file. Can also be
-        the path to groups, but the groups must contain only key datasets
+    key_datasets: list
+        A list of key datasets in the hdf5 file.
 
     timeout: int (optional)
         The maximum time allowed for a dataset to update before the timeout
         termination condition is trigerred and iteration is halted. If a value
         is not set this will default to 10 seconds.
 
-    finished_dataset: string (optional)
-        Path to a scalar hdf5 dataset which is zero when the file is being
+    finished_dataset: dataset (optional)
+        A scalar hdf5 dataset which is zero when the file is being
         written to and non-zero when the file is complete. Used to stop
         the iterator without waiting for the timeout
 
@@ -38,10 +34,11 @@ class KeyFollower:
     >>> # open hdf5 file using context manager with swmr mode activated
     >>> with h5py.File("/home/documents/work/data/example.h5", "r", swmr = True) as f:
     >>>     # create an instance of the Follower object to iterate through
-    >>>     kf = KeyFollower(f,
-    >>>                   ['/path/to/key/one', '/path/to/key/two'],
+    >>>     keys = [f["key1"], f["key2]]
+    >>>     finished = f["finished"]
+    >>>     kf = KeyFollower(keys,
     >>>                   timeout = 10,
-    >>>                   finished_dataset = "/path/to/finished")
+    >>>                   finished_dataset = finished)
     >>>     # iterate through the iterator as with a standard iterator/generator object
     >>>     for key in kf:
     >>>         print(key)

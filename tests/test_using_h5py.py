@@ -139,7 +139,8 @@ def test_mock_scan(tmp_path):
     with h5py.File(f, "r", libver="latest", swmr=True) as fh:
         keys = [fh["/key"],]
         data = {"/data": fh["/data"]}  
-        df = DataSource(keys, data, timeout=1)
+        finished = fh["finished"]
+        df = DataSource(keys, data, timeout=1, finished_dataset=finished)
 
         count = 1
 
@@ -163,8 +164,9 @@ def test_mock_grid_scan(tmp_path):
     with h5py.File(f, "r", libver="latest", swmr=True) as fh:
 
         keys = [fh["/key"],]
-        data = {"/data": fh["/data"]}  
-        df = DataSource(keys, data, timeout=3)
+        data = {"/data": fh["/data"]} 
+        finished = fh["finished"]
+        df = DataSource(keys, data, timeout=3,finished_dataset=finished)
 
         count = 1
 
@@ -210,6 +212,7 @@ def mock_scan(path):
         ds = fh.create_dataset("data", data=d, maxshape=maxshape)
         k = np.zeros((1,))
         ks = fh.create_dataset("key", data=k, maxshape=(20,))
+        finished = fh.create_dataset("finished", data=np.zeros((1,)), maxshape=(1,))
         fh.swmr_mode = True
         for i in range(maxn):
             s = (i + 1, 9, 10)
@@ -221,6 +224,8 @@ def mock_scan(path):
             ks[i] = 1
             ks.flush()
             time.sleep(1)
+        finished[0] = 1
+        finished.flush()
 
 
 def mock_grid_scan(path):
@@ -234,13 +239,13 @@ def mock_grid_scan(path):
         ds = fh.create_dataset("data", data=d, maxshape=maxshape)
         k = np.zeros((1, 1))
         ks = fh.create_dataset("key", data=k, maxshape=(3, 4))
+        finished = fh.create_dataset("finished", data=np.zeros((1,)), maxshape=(1,))
         fh.swmr_mode = True
         count = 1
         for j in range(3):
             for i in range(4):
                 # s = (j + 1, i + 1, 9, 10)
                 if i == 0:
-                    print("Resize")
                     ds.resize((j + 1, 4, 9, 10))
                     ks.resize((j + 1, 4))
                 ds[j, i, :, :] = np.ones(shape) * count
@@ -249,3 +254,6 @@ def mock_grid_scan(path):
                 ks[j, i] = 1
                 ks.flush()
                 time.sleep(1)
+
+        finished[0] = 1
+        finished.flush()
