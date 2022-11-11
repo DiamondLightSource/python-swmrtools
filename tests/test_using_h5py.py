@@ -17,10 +17,11 @@ def test_multiple_keys(tmp_path):
         d1[0:5] = 1
         fh.create_dataset("incomplete", data=d1, maxshape=(10,))
 
-    ps = ["/"]
-
     with h5py.File(f, "r") as fh:
-        kf = KeyFollower(fh, ps, timeout=0.1)
+
+        keys = [fh["complete"], fh["incomplete"]]        
+
+        kf = KeyFollower(keys, timeout=0.1)
         kf.check_datasets()
 
         assert kf.scan_rank == 1
@@ -41,10 +42,9 @@ def test_complete_keys(tmp_path):
         d1 = np.ones((10))
         fh.create_dataset("complete2", data=d1, maxshape=(10,))
 
-    ps = ["/"]
-
     with h5py.File(f, "r") as fh:
-        kf = KeyFollower(fh, ps, timeout=0.1)
+        keys = [fh["complete"], fh["complete2"]]  
+        kf = KeyFollower(keys, timeout=0.1)
         kf.check_datasets()
 
         assert kf.scan_rank == 1
@@ -72,12 +72,12 @@ def inner_data_read(tmp_path, direct):
 
     with h5py.File(f, "r") as fh:
 
-        data_paths = ["/data"]
-        key_paths = ["/key"]
+        keys = [fh["/key"],]
+        data = {"/data": fh["/data"]}  
+
         df = DataSource(
-            fh,
-            key_paths,
-            data_paths,
+            keys,
+            data,
             timeout=1,
             use_direct_chunk=direct,
         )
@@ -103,9 +103,9 @@ def test_use_case_example(tmp_path):
 
     with h5py.File(f, "r") as fh, h5py.File(o, "w") as oh:
 
-        data_paths = ["/data"]
-        key_paths = ["/key"]
-        df = DataSource(fh, key_paths, data_paths, timeout=1)
+        keys = [fh["/key"],]
+        data = {"/data": fh["/data"]}  
+        df = DataSource(keys, data, timeout=1)
 
         output = None
 
@@ -124,7 +124,6 @@ def test_use_case_example(tmp_path):
         out = oh["/result"]
         assert out.shape == (2, 3, 4)
         assert out.maxshape == (2, 3, 4)
-        print(out[...])
         assert 119 + 118 + 117 + 116 + 115 == out[1, 2, 3]
         assert out[0, 1, 0] != 0
 
@@ -138,10 +137,9 @@ def test_mock_scan(tmp_path):
     utils.check_file_readable(f, ["/data", "/key"], timeout=5)
 
     with h5py.File(f, "r", libver="latest", swmr=True) as fh:
-
-        data_paths = ["/data"]
-        key_paths = ["/key"]
-        df = DataSource(fh, key_paths, data_paths, timeout=1)
+        keys = [fh["/key"],]
+        data = {"/data": fh["/data"]}  
+        df = DataSource(keys, data, timeout=1)
 
         count = 1
 
@@ -164,9 +162,9 @@ def test_mock_grid_scan(tmp_path):
 
     with h5py.File(f, "r", libver="latest", swmr=True) as fh:
 
-        data_paths = ["/data"]
-        key_paths = ["/key"]
-        df = DataSource(fh, key_paths, data_paths, timeout=3)
+        keys = [fh["/key"],]
+        data = {"/data": fh["/data"]}  
+        df = DataSource(keys, data, timeout=3)
 
         count = 1
 
@@ -174,7 +172,6 @@ def test_mock_grid_scan(tmp_path):
         for dset in df:
             d = dset["/data"]
             assert d[0, 0, 0, 0].item() == count
-            print(d[0, 0, 0, 0].item())
             count = count + 1
 
     p.join()
@@ -223,7 +220,6 @@ def mock_scan(path):
             ds.flush()
             ks[i] = 1
             ks.flush()
-            print("flush " + str(i))
             time.sleep(1)
 
 
@@ -252,5 +248,4 @@ def mock_grid_scan(path):
                 ds.flush()
                 ks[j, i] = 1
                 ks.flush()
-                print("flush " + str((j, i)))
                 time.sleep(1)

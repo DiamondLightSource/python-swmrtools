@@ -228,10 +228,10 @@ class KeyFollower:
 
 class RowKeyFollower:
     def __init__(
-        self, h5file, keypaths, timeout=10, finished_dataset=None, row_size=None
+        self, key_datasets, timeout=10, finished_dataset=None, row_size=None
     ):
         self.inner_key_follower = KeyFollower(
-            h5file, keypaths, timeout=timeout, finished_dataset=finished_dataset
+            key_datasets, timeout=timeout, finished_dataset=finished_dataset
         )
         self.row_size = row_size
         self.scan_rank = -1
