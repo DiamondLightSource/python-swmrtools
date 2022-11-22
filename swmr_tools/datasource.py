@@ -289,6 +289,7 @@ class FrameReader:
             pos = self.get_pos(index, shape)
         except ValueError:
             # refresh dataset and try again
+            sleep(1)
             refresh_dataset(ds)
 
             shape = ds.shape
