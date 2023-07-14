@@ -4,7 +4,6 @@ import utils
 
 
 def test_iterates_complete_dataset():
-
     mds = utils.make_mock([10])
     mdsc = utils.make_mock([10])
     finished = utils.make_mock([1])
@@ -66,7 +65,6 @@ def test_iterates_complete_dataset():
 
 
 def test_iterates_complete_interleaved_datasets():
-
     mdsc1 = utils.make_mock([11])
     mdsc2 = utils.make_mock([11])
     mdsc3 = utils.make_mock([10])

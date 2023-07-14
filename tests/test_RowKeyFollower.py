@@ -3,7 +3,6 @@ import utils
 
 
 def test_iterates_complete_dataset():
-
     mds = utils.make_mock()
     mds.dataset = mds.dataset + 1
 
@@ -21,7 +20,6 @@ def test_iterates_complete_dataset():
 
 
 def test_iterates_incomplete_dataset():
-
     mds = utils.make_mock()
     mds.dataset[:2, :, :, :] = 1
     mds.dataset[
@@ -40,7 +38,6 @@ def test_iterates_incomplete_dataset():
 
 
 def test_iterates_complete_dataset_maxshape():
-
     mds = utils.make_mock(shape=[5, 10, 1, 1], maxshape=(None, None, 1, 1))
     mds.dataset = mds.dataset + 1
     kf = RowKeyFollower([mds], timeout=0.1, row_size=10)

@@ -4,7 +4,6 @@ import h5py
 
 
 def test_row_slice():
-
     shape = [3, 4, 5, 6, 7, 8]
     index = 5
     scan_rank = 4
@@ -50,7 +49,6 @@ def test_row_slice():
 
 
 def test_get_position():
-
     index = 0
     shape = [2, 3, 4, 5]
     scan_rank = 2
@@ -62,7 +60,6 @@ def test_get_position():
 
 
 def test_get_position_snake():
-
     max_shape = [3, 4, 5, 4, 8, 8]
     scan_rank = 4
 
@@ -138,7 +135,6 @@ def test_append_data(tmp_path):
 
 
 def test_nexus_utils(tmp_path):
-
     fin = str(tmp_path / "in.h5")
     fout = str(tmp_path / "out.h5")
 
@@ -196,7 +192,6 @@ def test_check_file_readable(tmp_path):
 
 
 def test_convert_stack_to_grid():
-
     scan_shape = [3, 4]
     slices = [
         slice(0, None, 1),

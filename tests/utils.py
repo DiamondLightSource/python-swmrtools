@@ -3,7 +3,6 @@ import numpy as np
 
 
 def make_mock(shape=[5, 10, 1, 1], maxshape=None):
-
     mds = Mock()
     mds.dataset = np.zeros(shape)
 

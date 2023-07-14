@@ -72,7 +72,6 @@ class DataSource:
         use_direct_chunk=False,
         interleaved_datasets=None,
     ):
-
         self._datasets = datasets
         self._interleaved_datasets = interleaved_datasets
         self.max_index = -1
@@ -113,7 +112,6 @@ class DataSource:
         return self
 
     def __next__(self):
-
         current_dataset_index = next(self.kf)
         force_refresh = False
         if self.max_index < current_dataset_index:

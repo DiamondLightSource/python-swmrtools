@@ -8,7 +8,6 @@ from functools import reduce
 
 
 def test_multiple_keys(tmp_path):
-
     f = str(tmp_path / "f.h5")
 
     with h5py.File(f, "w") as fh:
@@ -18,7 +17,6 @@ def test_multiple_keys(tmp_path):
         fh.create_dataset("incomplete", data=d1, maxshape=(10,))
 
     with h5py.File(f, "r") as fh:
-
         keys = [fh["complete"], fh["incomplete"]]
 
         kf = KeyFollower(keys, timeout=0.1)
@@ -34,7 +32,6 @@ def test_multiple_keys(tmp_path):
 
 
 def test_complete_keys(tmp_path):
-
     f = str(tmp_path / "f.h5")
 
     with h5py.File(f, "w") as fh:
@@ -65,13 +62,11 @@ def test_data_read_direct(tmp_path):
 
 
 def inner_data_read(tmp_path, direct):
-
     f = str(tmp_path / "f.h5")
 
     create_test_file(f)
 
     with h5py.File(f, "r") as fh:
-
         keys = [
             fh["/key"],
         ]
@@ -95,7 +90,6 @@ def inner_data_read(tmp_path, direct):
 
 
 def test_use_case_example(tmp_path):
-
     f = str(tmp_path / "f.h5")
     o = str(tmp_path / "o.h5")
 
@@ -104,7 +98,6 @@ def test_use_case_example(tmp_path):
     output_path = "result"
 
     with h5py.File(f, "r") as fh, h5py.File(o, "w") as oh:
-
         keys = [
             fh["/key"],
         ]
@@ -168,7 +161,6 @@ def test_mock_grid_scan(tmp_path):
     utils.check_file_readable(f, ["/data", "/key"], timeout=5)
 
     with h5py.File(f, "r", libver="latest", swmr=True) as fh:
-
         keys = [
             fh["/key"],
         ]
@@ -188,7 +180,6 @@ def test_mock_grid_scan(tmp_path):
 
 
 def create_test_file(path):
-
     with h5py.File(path, "w") as fh:
         shape = (2, 3, 4, 5)
         size = reduce(lambda x, y: x * y, shape)
@@ -209,7 +200,6 @@ def create_test_file(path):
 
 
 def mock_scan(path):
-
     with h5py.File(path, "w", libver="latest") as fh:
         maxn = 10
         maxshape = (maxn, 9, 10)
@@ -237,7 +227,6 @@ def mock_scan(path):
 
 
 def mock_grid_scan(path):
-
     with h5py.File(path, "w", libver="latest") as fh:
         maxshape = (3, 4, 9, 10)
         shape = (1, 1, 9, 10)

@@ -115,7 +115,6 @@ def create_dataset(data, scan_maxshape, fh, path, **kwargs):
 
     # if chunks not set use data shape
     if "chunks" not in kwargs:
-
         if data.size < 10:
             c = [1 if i is None else i for i in maxshape]
             kwargs["chunks"] = tuple(c)
@@ -236,7 +235,6 @@ def check_file_readable(path, datasets, timeout=10, retrys=5):
 
 
 def convert_stack_to_grid(slices, scan_shape, snake=False):
-
     index = slices[0].start
 
     if not snake:
