@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class SliceInOut:
     def __init__(self, input, output):
         self.input = input
@@ -45,34 +48,38 @@ class ChunkSliceCollection:
 
 
 def calc_offset(pos, shape, chunk_size, snake=False):
-    num = pos[0] * shape[-1]
+    # 2D only
+    # num = pos[-2] * shape[-1]spos
+    # poff = num % chunk_size
+
+    # ND
+    num = np.ravel_multi_index(pos[:-1], shape[:-1]) * shape[-1]
     poff = num % chunk_size
 
+    print(f"Pos {pos} give poff {poff}")
+
     if snake and pos[0] % 2 == 1:
-        end_section_size = shape[1] % chunk_size
+        end_section_size = shape[-1] % chunk_size
 
         # Last chunk completed last row
-        if poff == 0 and pos[1] + chunk_size >= shape[1]:
+        if poff == 0 and pos[-1] + chunk_size >= shape[-1]:
             return poff
         elif poff == 0:
             poff = end_section_size
             return poff
 
         if pos[-1] < (shape[1] - end_section_size) and not (
-            pos[1] + (chunk_size - poff) + 1 == shape[1]
+            pos[-1] + (chunk_size - poff) + 1 == shape[-1]
         ):
             # Account for end section on snake row
             n_remaining = chunk_size - poff
-            print("IN HERE")
 
             if n_remaining >= end_section_size:
                 # can fill end section
-                print("Can fill end")
                 poff += end_section_size
             else:
                 # update offset if remaining doesnt fill end sectino
                 poff = end_section_size - n_remaining
-                print("Cant fill end")
 
     return poff
 
@@ -82,10 +89,7 @@ def snake_routine(spos, n_points_chunk, scan_shape):
 
     slice_structure = []
 
-    end_section_size = scan_shape[1] % n_points_chunk
-    print(spos)
-    print(spos[-1] + n_points_chunk)
-    print(scan_shape[-1])
+    end_section_size = scan_shape[-1] % n_points_chunk
 
     if (
         position_offset == 0
@@ -105,7 +109,7 @@ def snake_routine(spos, n_points_chunk, scan_shape):
     elif position_offset == 0 and not (spos[-1] + 1 - n_points_chunk < 0):
         # Complete chunk written (in reverse)
         current = SliceInOut(
-            slice(None, None, -1), slice(spos[1] - n_points_chunk + 1, spos[1] + 1)
+            slice(None, None, -1), slice(spos[-1] - n_points_chunk + 1, spos[-1] + 1)
         )
         cc = ChunkSliceCollection("current")
         cc.current = current
@@ -115,8 +119,8 @@ def snake_routine(spos, n_points_chunk, scan_shape):
         return slice_structure
     else:
         # CASE 1 - backwards row start, enough remaining to fill complete partial end row chunk
-        if spos[1] + (n_points_chunk - position_offset) + 1 == scan_shape[1]:
-            end_section_size = scan_shape[1] % n_points_chunk
+        if spos[1] + (n_points_chunk - position_offset) + 1 == scan_shape[-1]:
+            end_section_size = scan_shape[-1] % n_points_chunk
 
             if n_points_chunk - position_offset >= end_section_size:
                 # Some of last chunk to complete end section
@@ -159,8 +163,8 @@ def snake_routine(spos, n_points_chunk, scan_shape):
 
         if position_offset != 0:
             # Two reads contribute to written chunk
-            start = spos[1] - position_offset + 1
-            end = spos[1] - position_offset + n_points_chunk + 1
+            start = spos[-1] - position_offset + 1
+            end = spos[-1] - position_offset + n_points_chunk + 1
 
             n_remaining = n_points_chunk - position_offset
 
@@ -190,7 +194,7 @@ def non_snake_routine(spos, n_points_chunk, scan_shape):
         # Complete chunk read can be written
         cc = ChunkSliceCollection("current")
         current = SliceInOut(
-            slice(0, n_points_chunk), slice(spos[1], spos[1] + n_points_chunk)
+            slice(0, n_points_chunk), slice(spos[-1], spos[-1] + n_points_chunk)
         )
         cc.current = current
         slice_structure.append(cc)
@@ -257,7 +261,7 @@ def non_snake_routine(spos, n_points_chunk, scan_shape):
 
             current = SliceInOut(
                 slice(position_offset, w_end),
-                slice(spos[1] + position_offset, scan_shape[1]),
+                slice(spos[-1] + position_offset, scan_shape[-1]),
             )
             cc = ChunkSliceCollection("current")
             cc.current = current
@@ -265,3 +269,67 @@ def non_snake_routine(spos, n_points_chunk, scan_shape):
             slice_structure.append(cc)
 
     return slice_structure
+
+
+def get_slice_structure(spos, n_points_chunk, scan_shape, snake):
+    if snake and spos[0] % 2 == 1:
+        return snake_routine(spos, n_points_chunk, scan_shape)
+    else:
+        return non_snake_routine(spos, n_points_chunk, scan_shape)
+
+
+def write_data(slice_structure, spos, data, last_data, output):
+    output_slice = [slice(0, None)] * len(output.shape)
+    output_slice[0] = slice(spos[0], spos[0] + 1)
+
+    for s in slice_structure:
+        if s.type == "current":
+            si = s.current.input
+            so = s.current.output
+
+            input_slice = [slice(0, None)] * len(data.shape)
+            input_slice[0] = si
+            flush_data = data[tuple(input_slice)]
+            # output[spos[0], so] = data[si]
+        elif s.type == "last":
+            si = s.last.input
+            so = s.last.output
+            input_slice = [slice(0, None)] * len(last_data.shape)
+            input_slice[0] = si
+
+            flush_data = last_data[tuple(input_slice)]
+            # output[spos[0], so] = last_data[si]
+
+        else:
+            # Combined
+            inter_shape = list(data.shape)
+            inter_shape[0] = s.intermediate.size
+            intermediate = np.zeros(inter_shape, dtype=data.dtype)
+            ls = s.last.input
+            li = s.last.output
+            last_slice = [slice(0, None)] * len(last_data.shape)
+            last_slice[0] = ls
+
+            intermediate[li] = last_data[tuple(last_slice)]
+
+            cs = s.current.input
+            ci = s.current.output
+            input_slice = [slice(0, None)] * len(data.shape)
+            input_slice[0] = cs
+
+            intermediate[ci] = data[tuple(input_slice)]
+
+            so = s.intermediate.slice
+
+            flush_data = intermediate
+            # output[spos[0], so] = intermediate
+
+        rank = len(data.shape)
+        output_slice[-1 * rank] = so
+
+        # rank = len(data.shape)
+        # output_slice[-1] = so
+        print(output_slice)
+        print(output.shape)
+        print(flush_data.shape)
+        output[tuple(output_slice)] = flush_data
