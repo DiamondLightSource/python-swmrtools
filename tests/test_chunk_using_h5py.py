@@ -29,11 +29,10 @@ def test_chunk_source_static(tmp_path):
                 assert c["data"].shape == (10,4,5)
             else:
                 assert c["data"].shape == (5,4,5)
-            print(c.slice_metadata)
-            print(c["data"].max())
+
             counter += 1
 
-    assert counter != 0
+    assert counter == 3
 
 
 def test_mock_scan(tmp_path):

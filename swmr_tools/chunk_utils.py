@@ -56,8 +56,6 @@ def calc_offset(pos, shape, chunk_size, snake=False):
     num = np.ravel_multi_index(pos[:-1], shape[:-1]) * shape[-1]
     poff = num % chunk_size
 
-    print(f"Pos {pos} give poff {poff}")
-
     if snake and pos[0] % 2 == 1:
         end_section_size = shape[-1] % chunk_size
 
@@ -272,6 +270,7 @@ def non_snake_routine(spos, n_points_chunk, scan_shape):
 
 
 def get_slice_structure(spos, n_points_chunk, scan_shape, snake):
+
     if snake and spos[0] % 2 == 1:
         return snake_routine(spos, n_points_chunk, scan_shape)
     else:
@@ -290,7 +289,6 @@ def write_data(slice_structure, spos, data, last_data, output):
             input_slice = [slice(0, None)] * len(data.shape)
             input_slice[0] = si
             flush_data = data[tuple(input_slice)]
-            # output[spos[0], so] = data[si]
         elif s.type == "last":
             si = s.last.input
             so = s.last.output
@@ -298,7 +296,6 @@ def write_data(slice_structure, spos, data, last_data, output):
             input_slice[0] = si
 
             flush_data = last_data[tuple(input_slice)]
-            # output[spos[0], so] = last_data[si]
 
         else:
             # Combined
@@ -322,14 +319,7 @@ def write_data(slice_structure, spos, data, last_data, output):
             so = s.intermediate.slice
 
             flush_data = intermediate
-            # output[spos[0], so] = intermediate
 
         rank = len(data.shape)
         output_slice[-1 * rank] = so
-
-        # rank = len(data.shape)
-        # output_slice[-1] = so
-        print(output_slice)
-        print(output.shape)
-        print(flush_data.shape)
         output[tuple(output_slice)] = flush_data

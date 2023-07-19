@@ -43,7 +43,6 @@ class ChunkSource:
 
             flat_index = current_index * self.chunk_size
             coffset[0] = flat_index
-            print(f"COFF {coffset}")
             chunk = d.id.read_direct_chunk(coffset)
             ds = self.chunk2numpy(chunk[1], d.dtype, s)
 
@@ -57,7 +56,6 @@ class ChunkSource:
             output[n] = ds
 
     def chunk2numpy(self, blob, dtype, shape):
-        print(f"for reshape {shape}")
         decom = blosc.decompress(blob)
         npa = np.frombuffer(decom, dtype=dtype, count=-1)
         return npa.reshape(shape)
@@ -70,9 +68,7 @@ class ChunkSource:
             return self._generate_output()
         else:
             start_time = time.time()
-            print(f"REFRESH {self.timeout} and {time.time() - start_time}")
             while self.timeout > (time.time() - start_time):
-                print(f"Read at {self.min_n_chunks}")
                 time.sleep(self.timeout / 20.0)
                 self._check_finished_dataset()
 
@@ -81,7 +77,6 @@ class ChunkSource:
                 tmp_min = min(
                     [ds.id.get_num_chunks() for ds in self._datasets.values()]
                 )
-                print(f"Check tmp_min {tmp_min}")
                 if tmp_min > self.min_n_chunks:
                     self.min_n_chunks = tmp_min
                     return self._generate_output()
@@ -89,7 +84,6 @@ class ChunkSource:
                 if self.finished_set:
                     raise StopIteration
 
-            print("STOP")
             raise StopIteration
 
     def _generate_output(self):
