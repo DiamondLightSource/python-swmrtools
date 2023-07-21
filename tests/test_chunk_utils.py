@@ -6,13 +6,16 @@ import pytest
 
 
 shapes = [
+    ([5, 15], 32),
+    ([7, 15], 46),
+    ([11, 51], 100),
     ([2, 2], 2),
     ([3, 3], 2),
     ([4, 4], 2),
     ([5, 5], 2),
     ([6, 6], 2),
     ([3, 3], 3),
-    ([4, 4], 5),
+    ([4, 4], 3),
     ([5, 5], 5),
     ([6, 6], 5),
     ([10, 10], 5),
@@ -84,18 +87,17 @@ def test_raster_scan(shape, chunk_size):
     for i in range(0, npoints, chunk_size):
         spos = utils.get_position(i, shape, len(shape))
 
-        print(f"run for {spos} in {shape}")
-
         ss = chunk_utils.get_slice_structure(spos, chunk_size, shape, False)
-        print(ss)
         check_start(ss, chunk_size)
-        chunk_utils.write_data(ss, spos, data, last_data, output)
+
+        chunk_utils.write_data(ss, data, last_data, output)
 
         last_data = data
         data = data.copy()
         data += chunk_size
 
     expected = np.arange(npoints).reshape(shape)
+    print(output)
     print(expected)
     print(output - expected)
     assert np.all(output == expected)
@@ -113,13 +115,11 @@ def test_snake_scan(shape, chunk_size):
     for i in range(0, npoints, chunk_size):
         spos = utils.get_position_snake(i, shape, len(shape))
 
-        # print(f"run for {spos} in {shape}")
-
         ss = chunk_utils.get_slice_structure(spos, chunk_size, shape, True)
-        print(ss)
-        check_start(ss, chunk_size)
 
-        chunk_utils.write_data(ss, spos, data, last_data, output)
+        check_start(ss, chunk_size)
+        
+        chunk_utils.write_data(ss, data, last_data, output)
 
         last_data = data
         data = data.copy()
@@ -128,7 +128,9 @@ def test_snake_scan(shape, chunk_size):
     expected = np.arange(npoints).reshape(shape)
 
     expected[1::2, :] = expected[1::2, ::-1]
-
+    print(output)
+    print(expected)
+    print(output - expected)
     assert np.all(output == expected)
 
 
@@ -148,11 +150,11 @@ def test_write():
     spos = utils.get_position(10, shape, len(shape))
     ss = chunk_utils.get_slice_structure(spos, chunk_size, shape, False)
 
-    chunk_utils.write_data(ss, spos, scalars, scalars, scalar_out)
+    chunk_utils.write_data(ss, scalars, scalars, scalar_out)
     assert scalar_out[0, 10] == 1
     assert scalar_out[0, 19] == 10
 
-    chunk_utils.write_data(ss, spos, vectors, vectors, vector_out)
+    chunk_utils.write_data(ss, vectors, vectors, vector_out)
 
     assert vector_out[0, 10, 0] == 1
     assert vector_out[0, 19, 0] == 10
@@ -162,15 +164,12 @@ def test_write():
     # last + combined
     spos = utils.get_position_snake(30, shape, len(shape))
     ss = chunk_utils.get_slice_structure(spos, chunk_size, shape, True)
-    print(ss)
-    chunk_utils.write_data(ss, spos, scalars, scalars, scalar_out)
-
-    print(scalar_out)
+    chunk_utils.write_data(ss, scalars, scalars, scalar_out)
 
     assert scalar_out[1, 22] == 4
     assert scalar_out[1, 19] == 7
 
-    chunk_utils.write_data(ss, spos, vectors, vectors, vector_out)
+    chunk_utils.write_data(ss, vectors, vectors, vector_out)
 
     assert vector_out[0, 10, 0] == 1
     assert vector_out[0, 19, 0] == 10

@@ -16,7 +16,13 @@ class ChunkSource:
         self.finished_dataset = finished_dataset
         self.timeout = timeout
         self.finished_set = False
-        self.max_size = min([ds.maxshape[0] for ds in self._datasets.values()])
+        self.max_size = None
+        for ds in self._datasets.values():
+            ms = ds.maxshape[0]
+
+            if ms != None and (self.max_size == None or self.max_size > ms):
+                self.max_size = ms
+
         self.min_n_chunks = min(
             [ds.id.get_num_chunks() for ds in self._datasets.values()]
         )
@@ -43,8 +49,19 @@ class ChunkSource:
 
             flat_index = current_index * self.chunk_size
             coffset[0] = flat_index
+
+            prop_dcid = d.id.get_create_plist()
+            use_blosc = False
+            if prop_dcid.get_nfilters() == 1 and prop_dcid.get_filter(0)[0] == 32001:
+                use_blosc = True
+            elif prop_dcid.get_nfilters() == 0:
+                pass
+            else:
+                raise RuntimeError("Dataset filters not supported for direct chunk read")
+            
             chunk = d.id.read_direct_chunk(coffset)
-            ds = self.chunk2numpy(chunk[1], d.dtype, s)
+
+            ds = self.chunk2numpy(chunk[1], d.dtype, s, use_blosc)
 
             if self.max_size < (current_index * self.chunk_size + self.chunk_size):
                 s[0] = self.max_size - current_index * self.chunk_size
@@ -55,9 +72,10 @@ class ChunkSource:
 
             output[n] = ds
 
-    def chunk2numpy(self, blob, dtype, shape):
-        decom = blosc.decompress(blob)
-        npa = np.frombuffer(decom, dtype=dtype, count=-1)
+    def chunk2numpy(self, blob, dtype, shape, use_blosc):
+        if use_blosc:
+            blob = blosc.decompress(blob)
+        npa = np.frombuffer(blob, dtype=dtype, count=-1)
         return npa.reshape(shape)
 
     def __iter__(self):
