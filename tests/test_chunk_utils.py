@@ -28,7 +28,7 @@ shapes = [
     ([35, 34], 7),
     ([35, 35], 7),
     ([12, 29], 7),
-    # ([3, 12, 29], 7),
+    ([2, 10], 10),
 ]
 
 
@@ -88,6 +88,7 @@ def test_raster_scan(shape, chunk_size):
         spos = utils.get_position(i, shape, len(shape))
 
         ss = chunk_utils.get_slice_structure(spos, chunk_size, shape, False)
+        print(ss)
         check_start(ss, chunk_size)
 
         chunk_utils.write_data(ss, data, last_data, output)
@@ -97,8 +98,11 @@ def test_raster_scan(shape, chunk_size):
         data += chunk_size
 
     expected = np.arange(npoints).reshape(shape)
+    print("OUTPUT")
     print(output)
+    print("EXPECTED")
     print(expected)
+    print("DIFF")
     print(output - expected)
     assert np.all(output == expected)
 
@@ -116,7 +120,7 @@ def test_snake_scan(shape, chunk_size):
         spos = utils.get_position_snake(i, shape, len(shape))
 
         ss = chunk_utils.get_slice_structure(spos, chunk_size, shape, True)
-
+        print(ss)
         check_start(ss, chunk_size)
         
         chunk_utils.write_data(ss, data, last_data, output)
@@ -127,14 +131,30 @@ def test_snake_scan(shape, chunk_size):
 
     expected = np.arange(npoints).reshape(shape)
 
-    expected[1::2, :] = expected[1::2, ::-1]
+    # step_slice = slice(1,None,2)
+    # flip_slice = slice(None,None,-1)
+    # all = slice(0,None)
+
+    # full_slice = [all] * len(expected.shape)
+    
+    for i in range(npoints):
+        position= utils.get_position_snake(i, shape, len(shape))
+        s = [slice(p,p+1) for p in position]
+        expected[tuple(s)] = i
+
+    # expected[1::2, :] = expected[1::2, ::-1]
+    # expected[ :, :] = expected[:, :]
+    print("OUTPUT")
     print(output)
+    print("EXPECTED")
     print(expected)
+    print("DIFF")
     print(output - expected)
     assert np.all(output == expected)
 
 
 def test_write():
+    print("GO")
     shape = [11, 23]
     chunk_size = 10
 
@@ -151,6 +171,7 @@ def test_write():
     ss = chunk_utils.get_slice_structure(spos, chunk_size, shape, False)
 
     chunk_utils.write_data(ss, scalars, scalars, scalar_out)
+
     assert scalar_out[0, 10] == 1
     assert scalar_out[0, 19] == 10
 
