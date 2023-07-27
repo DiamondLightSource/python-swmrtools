@@ -60,6 +60,38 @@ def get_position_snake(index, shape, scan_rank):
 
     return tuple(out)
 
+def get_position_general(index, shape):
+    """
+    Returns the position in a snake scan associated with the given index
+
+        Parameters:
+            index (int): Flattened index of scan point
+            shape (array): Shape of dataset of interest
+            scan_rank (int): Rank of scan (must be <= len(shape))
+
+        Returns:
+            position (tuple): Ndimensional position in scan associated with the index
+    Examples
+    --------
+
+    >>> utils.get_position_snake(0, [3,4,5], 2)
+    (0,0)
+
+    """
+    snake_row = False
+    non_snake = get_position(index, shape, len(shape))
+    out = [*non_snake]
+    sum = non_snake[0]
+    for i in range(1, len(out)):
+        if sum % 2 == 1:
+            out[i] = shape[i] - non_snake[i] - 1
+            if i == len(out)-1:
+                snake_row = True
+
+        sum += out[i]
+
+    return tuple(out), snake_row
+
 
 def get_row_slice(index, shape, scan_rank):
     """
