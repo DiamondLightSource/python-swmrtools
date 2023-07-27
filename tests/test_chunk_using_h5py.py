@@ -2,19 +2,19 @@ import h5py
 import numpy as np
 import hdf5plugin
 import math
-from swmr_tools import ChunkSource, chunk_utils, utils
+from swmr_tools import ChunkSource, utils
 import time
 import multiprocessing as mp
 
-def test_chunk_source_static(tmp_path):
 
+def test_chunk_source_static(tmp_path):
     f = str(tmp_path / "chunk.h5")
     create_test_file(f)
 
-    with h5py.File(f,'r') as fh:
+    with h5py.File(f, "r") as fh:
         ds = fh["/data"]
 
-        dd = {"data" : ds}
+        dd = {"data": ds}
 
         cs = ChunkSource(dd, timeout=0.5)
 
@@ -26,9 +26,9 @@ def test_chunk_source_static(tmp_path):
             assert "data" in c
 
             if counter != 2:
-                assert c["data"].shape == (10,4,5)
+                assert c["data"].shape == (10, 4, 5)
             else:
-                assert c["data"].shape == (5,4,5)
+                assert c["data"].shape == (5, 4, 5)
 
             counter += 1
 
@@ -36,18 +36,17 @@ def test_chunk_source_static(tmp_path):
 
 
 def test_mock_scan(tmp_path):
-
     f = str(tmp_path / "scan.h5")
 
     p = mp.Process(target=mock_scan, args=(f,))
     p.start()
 
-    utils.check_file_readable(f,"/data",timeout=2,retrys=10)
+    utils.check_file_readable(f, "/data", timeout=2, retrys=10)
 
-    with h5py.File(f,'r', libver="latest",swmr=True) as fh:
+    with h5py.File(f, "r", libver="latest", swmr=True) as fh:
         ds = fh["/data"]
 
-        dd = {"data" : ds}
+        dd = {"data": ds}
 
         cs = ChunkSource(dd)
 
@@ -62,10 +61,7 @@ def test_mock_scan(tmp_path):
 
     assert counter == 25
 
-
     p.join()
-
-
 
 
 # def test_real_file():
@@ -124,7 +120,6 @@ def test_mock_scan(tmp_path):
 #             last_ff = ff
 #             last_mca = mcas
 
-  
 
 def create_test_file(path):
     with h5py.File(path, "w") as fh:
@@ -141,8 +136,9 @@ def create_test_file(path):
             chunks=(10, 4, 5),
             **hdf5plugin.Blosc(
                 cname="blosclz", clevel=9, shuffle=hdf5plugin.Blosc.SHUFFLE
-            )
+            ),
         )
+
 
 def mock_scan(path):
     with h5py.File(path, "w", libver="latest") as fh:
@@ -159,18 +155,14 @@ def mock_scan(path):
             chunks=cshape,
             **hdf5plugin.Blosc(
                 cname="blosclz", clevel=9, shuffle=hdf5plugin.Blosc.SHUFFLE
-            )
+            ),
         )
 
         fh.swmr_mode = True
         count = 0
-        for i in range(0,shape[0],cshape[0]):
+        for i in range(0, shape[0], cshape[0]):
             print(i)
-            ds[i:i+(cshape[0]),:,:] = d + count
+            ds[i : i + (cshape[0]), :, :] = d + count
             ds.flush()
-            count +=1
+            count += 1
             time.sleep(0.15)
-
-
-        
-

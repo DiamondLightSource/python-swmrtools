@@ -38,6 +38,7 @@ shapes = [
     ([2, 3, 7, 10], 7),
 ]
 
+
 def check_start(ss, chunk_size):
     for s in ss:
         if s.type == "current":
@@ -48,13 +49,13 @@ def check_start(ss, chunk_size):
             so = s.intermediate.slice
 
         # start of output write should always be aligned to chunk
-        if so.step == None or so.step == 1:
+        if so.step is None or so.step == 1:
             assert so.start % chunk_size == 0
         else:
             assert so.step == -1
-            if so.stop != None:
-               assert (so.stop + 1) % chunk_size == 0
-        
+            if so.stop is not None:
+                assert (so.stop + 1) % chunk_size == 0
+
 
 @pytest.mark.parametrize("shape, chunk_size", shapes)
 def test_raster_scan(shape, chunk_size):
@@ -66,7 +67,6 @@ def test_raster_scan(shape, chunk_size):
     output = np.zeros(shape)
 
     for i in range(0, npoints, chunk_size):
-
         ss = chunk_utils.get_slice_structure(i, chunk_size, shape, False)
         check_start(ss, chunk_size)
         chunk_utils.write_data(ss, data, last_data, output)
@@ -89,10 +89,9 @@ def test_snake_scan(shape, chunk_size):
     output = np.zeros(shape)
 
     for i in range(0, npoints, chunk_size):
-
         ss = chunk_utils.get_slice_structure(i, chunk_size, shape, True)
         check_start(ss, chunk_size)
-        
+
         chunk_utils.write_data(ss, data, last_data, output)
 
         last_data = data
@@ -100,10 +99,10 @@ def test_snake_scan(shape, chunk_size):
         data += chunk_size
 
     expected = np.arange(npoints).reshape(shape)
-    
+
     for i in range(npoints):
-        position= utils.get_position_snake(i, shape, len(shape))
-        s = [slice(p,p+1) for p in position]
+        position = utils.get_position_snake(i, shape, len(shape))
+        s = [slice(p, p + 1) for p in position]
         expected[tuple(s)] = i
 
     assert np.all(output == expected)
@@ -147,4 +146,3 @@ def test_write():
     assert vector_out[0, 19, 0] == 10
     assert vector_out[0, 10, 5] == 1
     assert vector_out[0, 19, 5] == 10
-

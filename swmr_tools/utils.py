@@ -60,6 +60,7 @@ def get_position_snake(index, shape, scan_rank):
 
     return tuple(out)
 
+
 def get_position_general(index, shape):
     """
     Returns the position in a snake scan associated with the given index
@@ -85,7 +86,7 @@ def get_position_general(index, shape):
     for i in range(1, len(out)):
         if sum % 2 == 1:
             out[i] = shape[i] - non_snake[i] - 1
-            if i == len(out)-1:
+            if i == len(out) - 1:
                 snake_row = True
 
         sum += out[i]

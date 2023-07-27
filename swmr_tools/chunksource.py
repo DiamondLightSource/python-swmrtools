@@ -20,7 +20,7 @@ class ChunkSource:
         for ds in self._datasets.values():
             ms = ds.maxshape[0]
 
-            if ms != None and (self.max_size == None or self.max_size > ms):
+            if ms is not None and (self.max_size is None or self.max_size > ms):
                 self.max_size = ms
 
         self.min_n_chunks = min(
@@ -57,8 +57,10 @@ class ChunkSource:
             elif prop_dcid.get_nfilters() == 0:
                 pass
             else:
-                raise RuntimeError("Dataset filters not supported for direct chunk read")
-            
+                raise RuntimeError(
+                    "Dataset filters not supported for direct chunk read"
+                )
+
             chunk = d.id.read_direct_chunk(coffset)
 
             ds = self.chunk2numpy(chunk[1], d.dtype, s, use_blosc)

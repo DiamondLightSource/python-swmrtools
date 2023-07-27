@@ -2,6 +2,7 @@ import numpy as np
 from . import utils
 import math
 
+
 class SliceInOut:
     def __init__(self, input, output):
         self.input = input
@@ -31,14 +32,20 @@ class ChunkSliceCollection:
         out = f"Type {self.type}, position {self.position}"
 
         if self.last:
-            out += " Last input: " + str(self.last.input) + " Output: " + str(self.last.output)
-
+            out += (
+                " Last input: "
+                + str(self.last.input)
+                + " Output: "
+                + str(self.last.output)
+            )
 
         if self.current:
             out += (
-                " Current input: " + str(self.current.input) + " Output: " + str(self.current.output)
+                " Current input: "
+                + str(self.current.input)
+                + " Output: "
+                + str(self.current.output)
             )
-
 
         if self.intermediate:
             out += (
@@ -50,24 +57,27 @@ class ChunkSliceCollection:
 
         return out
 
-def build_collection(pos,in_start,in_stop,in_step, out_start, out_stop, out_step, type = "current"):
-        input = slice(in_start, in_stop, in_step)
-        output = slice(out_start, out_stop, out_step)
-        current = SliceInOut(input, output)
-        cc = ChunkSliceCollection(type, pos)
-        if type == "current":
-            cc.current = current
-        else:
-            cc.last = current
-        return cc
+
+def build_collection(
+    pos, in_start, in_stop, in_step, out_start, out_stop, out_step, type="current"
+):
+    input = slice(in_start, in_stop, in_step)
+    output = slice(out_start, out_stop, out_step)
+    current = SliceInOut(input, output)
+    cc = ChunkSliceCollection(type, pos)
+    if type == "current":
+        cc.current = current
+    else:
+        cc.last = current
+    return cc
+
 
 def write_data(slice_structure, data, last_data, output):
-
     for s in slice_structure:
         spos = s.position
 
         output_slice = [slice(0, None)] * len(output.shape)
-        
+
         for i in range(len(spos)):
             output_slice[i] = slice(spos[i], spos[i] + 1)
 
@@ -111,6 +121,7 @@ def write_data(slice_structure, data, last_data, output):
         output_slice[-1 * rank] = so
         output[tuple(output_slice)] = flush_data
 
+
 def raster_routine(index, poff, spos, n_points_chunk, scan_shape):
     remaining = n_points_chunk - poff
     last_chunk_width = scan_shape[-1] % n_points_chunk
@@ -118,7 +129,7 @@ def raster_routine(index, poff, spos, n_points_chunk, scan_shape):
     if poff == 0:
         remaining = 0
 
-    start_write = index-remaining
+    start_write = index - remaining
     start = utils.get_position(start_write, scan_shape, len(scan_shape))
 
     if start[-1] + last_chunk_width == scan_shape[-1]:
@@ -131,10 +142,11 @@ def raster_routine(index, poff, spos, n_points_chunk, scan_shape):
     end = list(start)
     end[-1] = end[-1] + end_write_offset
     if poff == 0:
-        cc = build_collection(spos,0,end_write_offset,1, start[-1], end[-1], 1, type = "current")
+        cc = build_collection(
+            spos, 0, end_write_offset, 1, start[-1], end[-1], 1, type="current"
+        )
         ss.append(cc)
     else:
-
         last_input_start = poff
         last_input_stop = n_points_chunk
         last_output_start = 0
@@ -150,7 +162,8 @@ def raster_routine(index, poff, spos, n_points_chunk, scan_shape):
         current_output_stop = n_points_chunk
 
         last = SliceInOut(
-            slice(last_input_start, last_input_stop), slice(last_output_start, last_output_stop)
+            slice(last_input_start, last_input_stop),
+            slice(last_output_start, last_output_stop),
         )
         current = SliceInOut(
             slice(current_input_start, current_input_stop),
@@ -159,7 +172,9 @@ def raster_routine(index, poff, spos, n_points_chunk, scan_shape):
         cc = ChunkSliceCollection("combined", spos)
         cc.current = current
         cc.last = last
-        intermediate = SliceSize(slice(start[-1], start[-1] + end_write_offset), end_write_offset)
+        intermediate = SliceSize(
+            slice(start[-1], start[-1] + end_write_offset), end_write_offset
+        )
         cc.intermediate = intermediate
         ss.append(cc)
 
@@ -167,7 +182,16 @@ def raster_routine(index, poff, spos, n_points_chunk, scan_shape):
         new_start = list(end)
         new_end = list(new_start)
         new_end[-1] = new_end[-1] + last_chunk_width
-        cc = build_collection(spos,poff,poff+last_chunk_width,1, new_start[-1], new_end[-1], 1, type = "current")
+        cc = build_collection(
+            spos,
+            poff,
+            poff + last_chunk_width,
+            1,
+            new_start[-1],
+            new_end[-1],
+            1,
+            type="current",
+        )
         ss.append(cc)
 
     return ss
@@ -178,21 +202,39 @@ def snake_routine(poff, spos, n_points_chunk, scan_shape):
     remaining = n_points_chunk - poff
     last_chunk_width = scan_shape[-1] % n_points_chunk
 
-    distance_from_end  = scan_shape[-1] - spos[-1]
+    distance_from_end = scan_shape[-1] - spos[-1]
 
     if distance_from_end < remaining + n_points_chunk:
-        if poff == 0 and last_chunk_width != 0 and  distance_from_end == 1:
-            #fill end from current chunk
-            cc = build_collection(spos,0,last_chunk_width, 1,scan_shape[-1], scan_shape[-1]-last_chunk_width-1, -1, type = "current")
+        if poff == 0 and last_chunk_width != 0 and distance_from_end == 1:
+            # fill end from current chunk
+            cc = build_collection(
+                spos,
+                0,
+                last_chunk_width,
+                1,
+                scan_shape[-1],
+                scan_shape[-1] - last_chunk_width - 1,
+                -1,
+                type="current",
+            )
             ss.append(cc)
-            #can do no more
+            # can do no more
             return ss
-        
+
         elif remaining >= last_chunk_width:
-            cc = build_collection(spos,poff,poff+last_chunk_width,1, scan_shape[-1], scan_shape[-1]-last_chunk_width-1, -1, type = "last")
+            cc = build_collection(
+                spos,
+                poff,
+                poff + last_chunk_width,
+                1,
+                scan_shape[-1],
+                scan_shape[-1] - last_chunk_width - 1,
+                -1,
+                type="last",
+            )
             ss.append(cc)
         else:
-            #combined end fill
+            # combined end fill
             last_input_start = poff
             last_input_stop = n_points_chunk
             last_output_start = 0
@@ -204,9 +246,10 @@ def snake_routine(poff, spos, n_points_chunk, scan_shape):
             current_output_stop = n_points_chunk
 
             last = SliceInOut(
-                slice(last_input_start, last_input_stop), slice(last_output_start, last_output_stop)
+                slice(last_input_start, last_input_stop),
+                slice(last_output_start, last_output_stop),
             )
-         
+
             current = SliceInOut(
                 slice(current_input_start, current_input_stop),
                 slice(current_output_start, current_output_stop),
@@ -215,31 +258,34 @@ def snake_routine(poff, spos, n_points_chunk, scan_shape):
             cc = ChunkSliceCollection("combined", spos)
             cc.current = current
             cc.last = last
-            intermediate = SliceSize(slice(scan_shape[-1], scan_shape[-1] - last_chunk_width-1, -1), last_chunk_width)
+            intermediate = SliceSize(
+                slice(scan_shape[-1], scan_shape[-1] - last_chunk_width - 1, -1),
+                last_chunk_width,
+            )
             cc.intermediate = intermediate
             ss.append(cc)
             return ss
 
     if last_chunk_width == 0:
-        #chunks align
+        # chunks align
         poff = n_points_chunk
     elif remaining < last_chunk_width:
         poff = last_chunk_width - remaining
     else:
         poff = poff + last_chunk_width
 
-
     remaining = n_points_chunk - poff
     if remaining == 0:
-
-        stop = spos[-1]-n_points_chunk
+        stop = spos[-1] - n_points_chunk
         if stop == -1:
             stop = None
 
-        cc = build_collection(spos,0,n_points_chunk, 1,spos[-1],stop,-1, type = "current")
+        cc = build_collection(
+            spos, 0, n_points_chunk, 1, spos[-1], stop, -1, type="current"
+        )
         ss.append(cc)
     else:
-        #can we write a combined?
+        # can we write a combined?
         last_input_start = poff
         last_input_stop = n_points_chunk
         last_output_start = 0
@@ -250,14 +296,15 @@ def snake_routine(poff, spos, n_points_chunk, scan_shape):
         current_output_start = remaining
         current_output_stop = n_points_chunk
 
-        stop = spos[-1]-poff
+        stop = spos[-1] - poff
         if stop == -1:
             stop = None
 
         last = SliceInOut(
-            slice(last_input_start, last_input_stop), slice(last_output_start, last_output_stop)
+            slice(last_input_start, last_input_stop),
+            slice(last_output_start, last_output_stop),
         )
-        
+
         current = SliceInOut(
             slice(current_input_start, current_input_stop),
             slice(current_output_start, current_output_stop),
@@ -266,109 +313,119 @@ def snake_routine(poff, spos, n_points_chunk, scan_shape):
         cc = ChunkSliceCollection("combined", spos)
         cc.current = current
         cc.last = last
-        intermediate = SliceSize(slice(spos[-1]+remaining, stop, -1), n_points_chunk)
+        intermediate = SliceSize(slice(spos[-1] + remaining, stop, -1), n_points_chunk)
         cc.intermediate = intermediate
         ss.append(cc)
 
     return ss
 
-def build_small_raster_complete(pos, i, scan_shape):
 
-    in_start = i*scan_shape[-1]
-    in_stop = scan_shape[-1]*(i+1)
+def build_small_raster_complete(pos, i, scan_shape):
+    in_start = i * scan_shape[-1]
+    in_stop = scan_shape[-1] * (i + 1)
     in_step = None
     out_start = pos[-1]
     out_stop = pos[-1] + scan_shape[-1]
     out_step = None
-    return build_collection(pos,in_start,in_stop,in_step, out_start, out_stop, out_step)
+    return build_collection(
+        pos, in_start, in_stop, in_step, out_start, out_stop, out_step
+    )
+
 
 def build_small_snake_complete(pos, i, scan_shape):
-
-    in_start = i*scan_shape[-1]
-    in_stop = scan_shape[-1]*(i+1)
+    in_start = i * scan_shape[-1]
+    in_stop = scan_shape[-1] * (i + 1)
     in_step = None
     out_stop = None
     out_start = pos[-1] + scan_shape[-1]
     out_step = -1
-    return build_collection(pos,in_start,in_stop,in_step, out_start, out_stop, out_step)
+    return build_collection(
+        pos, in_start, in_stop, in_step, out_start, out_stop, out_step
+    )
+
 
 def build_small_raster_offset(pos, i, scan_shape, offset):
-        in_start = i*scan_shape[-1]+offset
-        in_stop = scan_shape[-1]*(i+1)+offset
-        in_step = None
-        out_start = 0
-        out_stop = scan_shape[-1]
-        out_step = None
-        return build_collection(pos,in_start,in_stop,in_step, out_start, out_stop, out_step)
+    in_start = i * scan_shape[-1] + offset
+    in_stop = scan_shape[-1] * (i + 1) + offset
+    in_step = None
+    out_start = 0
+    out_stop = scan_shape[-1]
+    out_step = None
+    return build_collection(
+        pos, in_start, in_stop, in_step, out_start, out_stop, out_step
+    )
+
 
 def build_small_snake_offset(pos, i, scan_shape, offset):
+    in_start = i * scan_shape[-1] + offset
+    in_stop = scan_shape[-1] * (i + 1) + offset
+    in_step = None
+    out_start = scan_shape[-1]
+    out_stop = None
+    out_step = -1
+    return build_collection(
+        pos, in_start, in_stop, in_step, out_start, out_stop, out_step
+    )
 
-        in_start = i*scan_shape[-1]+offset
-        in_stop = scan_shape[-1]*(i+1)+offset
-        in_step = None
-        out_start = scan_shape[-1]
-        out_stop = None
-        out_step = -1
-        return build_collection(pos,in_start,in_stop,in_step, out_start, out_stop, out_step)
 
 def build_small_raster_combined(spos, n_points_chunk, position_offset, scan_shape):
-            #deal with partial chunk first
-        n_remaining = n_points_chunk - position_offset
-        # Two reads contributing to chunk
-        current = SliceInOut(
-            slice(0, scan_shape[-1] - n_remaining),
-            slice(n_remaining, scan_shape[-1]),
-        )
-        last = SliceInOut(
-            slice(n_points_chunk - n_remaining, None), slice(0, n_remaining)
-        )
-        cc = ChunkSliceCollection("combined", spos)
-        cc.current = current
-        cc.last = last
-        intermediate = SliceSize(slice(0, scan_shape[-1]), scan_shape[-1])
-        cc.intermediate = intermediate
-        return cc
+    # deal with partial chunk first
+    n_remaining = n_points_chunk - position_offset
+    # Two reads contributing to chunk
+    current = SliceInOut(
+        slice(0, scan_shape[-1] - n_remaining),
+        slice(n_remaining, scan_shape[-1]),
+    )
+    last = SliceInOut(slice(n_points_chunk - n_remaining, None), slice(0, n_remaining))
+    cc = ChunkSliceCollection("combined", spos)
+    cc.current = current
+    cc.last = last
+    intermediate = SliceSize(slice(0, scan_shape[-1]), scan_shape[-1])
+    cc.intermediate = intermediate
+    return cc
+
 
 def build_small_snake_combined(spos, n_points_chunk, position_offset, scan_shape):
-        #deal with partial chunk first
-        n_remaining = n_points_chunk - position_offset
-        # Two reads contributing to chunk
-        current = SliceInOut(
-            slice(0, scan_shape[-1] - n_remaining),
-            slice(n_remaining, scan_shape[-1]),
-        )
-        last = SliceInOut(
-            slice(n_points_chunk - n_remaining, None), slice(0, n_remaining)
-        )
-        cc = ChunkSliceCollection("combined", spos)
-        cc.current = current
-        cc.last = last
-        intermediate = SliceSize(slice(scan_shape[-1], None, -1), scan_shape[-1])
-        cc.intermediate = intermediate
-        return cc
-        
+    # deal with partial chunk first
+    n_remaining = n_points_chunk - position_offset
+    # Two reads contributing to chunk
+    current = SliceInOut(
+        slice(0, scan_shape[-1] - n_remaining),
+        slice(n_remaining, scan_shape[-1]),
+    )
+    last = SliceInOut(slice(n_points_chunk - n_remaining, None), slice(0, n_remaining))
+    cc = ChunkSliceCollection("combined", spos)
+    cc.current = current
+    cc.last = last
+    intermediate = SliceSize(slice(scan_shape[-1], None, -1), scan_shape[-1])
+    cc.intermediate = intermediate
+    return cc
+
 
 def x_smaller_than_chunk(index, spos, n_points_chunk, scan_shape, snake):
     is_snake_row = False
     if snake:
-        spos,is_snake_row = utils.get_position_general(index, scan_shape)
+        spos, is_snake_row = utils.get_position_general(index, scan_shape)
     else:
         spos = utils.get_position(index, scan_shape, len(scan_shape))
 
     nrows = index // scan_shape[-1]
-    complete = nrows*scan_shape[-1]
-    #number of points left over from chunk compared to complete rows
+    complete = nrows * scan_shape[-1]
+    # number of points left over from chunk compared to complete rows
     position_offset = complete % n_points_chunk
     slice_structure = []
 
     if position_offset == 0 and spos[-1] == 0:
         # Complete chunk read can be written to smaller chunks
-        for i in range(n_points_chunk//scan_shape[-1]):
-
+        for i in range(n_points_chunk // scan_shape[-1]):
             if snake:
-                tpos,is_snake_row = utils.get_position_general(index + (i)*scan_shape[-1], scan_shape)
+                tpos, is_snake_row = utils.get_position_general(
+                    index + (i) * scan_shape[-1], scan_shape
+                )
             else:
-                tpos = utils.get_position(index + (i)*scan_shape[-1], scan_shape, len(scan_shape))
+                tpos = utils.get_position(
+                    index + (i) * scan_shape[-1], scan_shape, len(scan_shape)
+                )
 
             if is_snake_row and snake:
                 cc = build_small_snake_complete(tpos, i, scan_shape)
@@ -376,33 +433,38 @@ def x_smaller_than_chunk(index, spos, n_points_chunk, scan_shape, snake):
                 cc = build_small_raster_complete(tpos, i, scan_shape)
             slice_structure.append(cc)
             is_snake_row = not is_snake_row
-        
+
         return slice_structure
-    
+
     else:
-        #deal with partial chunk first
+        # deal with partial chunk first
         n_remaining = n_points_chunk - position_offset
 
         if snake and is_snake_row:
-            cc = build_small_snake_combined(spos, n_points_chunk, position_offset, scan_shape)
+            cc = build_small_snake_combined(
+                spos, n_points_chunk, position_offset, scan_shape
+            )
         else:
-            cc = build_small_raster_combined(spos, n_points_chunk, position_offset, scan_shape)
-            
+            cc = build_small_raster_combined(
+                spos, n_points_chunk, position_offset, scan_shape
+            )
+
         slice_structure.append(cc)
         is_snake_row = not is_snake_row
         old_n_remaining = n_points_chunk - position_offset
         offset = scan_shape[-1] - n_remaining
-        
-        for i in range(0, (n_points_chunk-offset)//scan_shape[-1]):
 
-            updated_index = index + (i+1)*scan_shape[-1]-old_n_remaining
+        for i in range(0, (n_points_chunk - offset) // scan_shape[-1]):
+            updated_index = index + (i + 1) * scan_shape[-1] - old_n_remaining
 
             if updated_index == math.prod(scan_shape):
-                #probably should not need this?
+                # probably should not need this?
                 break
-            
+
             if snake:
-                tpos,is_snake_row = utils.get_position_general(updated_index, scan_shape)
+                tpos, is_snake_row = utils.get_position_general(
+                    updated_index, scan_shape
+                )
             else:
                 tpos = utils.get_position(updated_index, scan_shape, len(scan_shape))
 
@@ -415,6 +477,7 @@ def x_smaller_than_chunk(index, spos, n_points_chunk, scan_shape, snake):
 
         return slice_structure
 
+
 def get_slice_structure(index, n_points_chunk, scan_shape, snake):
     """
     Returns the slice structure for index, where the dataset has chunk size n_points_per_chunk and
@@ -424,7 +487,7 @@ def get_slice_structure(index, n_points_chunk, scan_shape, snake):
     (a) as the length of the scan grid row (if the row is smaller than the input data chunk size), or
     (b) as the input chunks size
 
-    So if writing directly to HDF5, the dataset chunking should be set appropriately (probably wont cause error if 
+    So if writing directly to HDF5, the dataset chunking should be set appropriately (probably wont cause error if
     not set correctly, but IO will be compromised). Returned structure copes with the "end of row" chunk not being filled
     by setting the input/output slices accordingly.
 
@@ -444,26 +507,26 @@ def get_slice_structure(index, n_points_chunk, scan_shape, snake):
 
     """
 
-    #Get position of the point in the scan grid that the chunk corresponds to
-    #and, if snake, whether that row is running backwards
+    # Get position of the point in the scan grid that the chunk corresponds to
+    # and, if snake, whether that row is running backwards
     is_snake_row = False
     if snake:
-        spos,is_snake_row = utils.get_position_general(index, scan_shape)
+        spos, is_snake_row = utils.get_position_general(index, scan_shape)
     else:
         spos = utils.get_position(index, scan_shape, len(scan_shape))
 
-    #if chunk is bigger than a row of the scan grid we use the row size as the chunk
-    #not the input data chunk size, which is a different routine
+    # if chunk is bigger than a row of the scan grid we use the row size as the chunk
+    # not the input data chunk size, which is a different routine
     if n_points_chunk > scan_shape[-1]:
         return x_smaller_than_chunk(index, spos, n_points_chunk, scan_shape, snake)
-    
+
     nrows = index // scan_shape[-1]
-    complete = nrows*scan_shape[-1]
-    #number of points left over from chunk compared to complete rows
+    complete = nrows * scan_shape[-1]
+    # number of points left over from chunk compared to complete rows
     poff = complete % n_points_chunk
 
-    #run the snake routine
+    # run the snake routine
     if is_snake_row:
         return snake_routine(poff, spos, n_points_chunk, scan_shape)
     else:
-        return raster_routine(index,poff,spos,n_points_chunk,scan_shape)
+        return raster_routine(index, poff, spos, n_points_chunk, scan_shape)

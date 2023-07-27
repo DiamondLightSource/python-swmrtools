@@ -72,6 +72,7 @@ def test_get_position_snake():
         assert out == tuple(shape)
         inc_shape_snake(-1, shape, scan_shape, snaking)
 
+
 def test_get_position_general():
     max_shape = [3, 3, 3]
 
