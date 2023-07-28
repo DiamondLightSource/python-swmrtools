@@ -100,12 +100,14 @@ def write_data(slice_structure, data, last_data, output):
             inter_shape = list(data.shape)
             inter_shape[0] = s.intermediate.size
             intermediate = np.zeros(inter_shape, dtype=data.dtype)
+
             ls = s.last.input
             li = s.last.output
             last_slice = [slice(0, 1)] * len(last_data.shape)
             last_slice[0] = ls
-
             intermediate[li] = last_data[tuple(last_slice)]
+
+            print(f"after last {intermediate}")
 
             cs = s.current.input
             ci = s.current.output
@@ -113,12 +115,18 @@ def write_data(slice_structure, data, last_data, output):
             input_slice[0] = cs
             intermediate[ci] = data[tuple(input_slice)]
 
+
+            print(f"after current {intermediate}")
+
             so = s.intermediate.slice
 
             flush_data = intermediate
 
         rank = len(data.shape)
         output_slice[-1 * rank] = so
+        if s.position == (3, 28):
+            print(flush_data)
+        print(f"OUTPUT {output_slice} data {flush_data.shape} {s.type} {s.position}")
         output[tuple(output_slice)] = flush_data
 
 
@@ -209,61 +217,85 @@ def snake_routine(poff, spos, n_points_chunk, scan_shape):
             # fill end from current chunk
             cc = build_collection(
                 spos,
-                0,
                 last_chunk_width,
-                1,
-                scan_shape[-1],
-                scan_shape[-1] - last_chunk_width - 1,
+                0,
                 -1,
+                scan_shape[-1] - last_chunk_width,
+                scan_shape[-1],
+                1,
                 type="current",
             )
             ss.append(cc)
             # can do no more
             return ss
 
-        elif remaining >= last_chunk_width:
+        elif remaining >= last_chunk_width and last_chunk_width != 0:
+
+            start_input = poff+ last_chunk_width-1
+
+            if poff == 0:
+                stop_input = None
+            else:
+                stop_input = poff-1
+
             cc = build_collection(
                 spos,
-                poff,
-                poff + last_chunk_width,
-                1,
-                scan_shape[-1],
-                scan_shape[-1] - last_chunk_width - 1,
+                start_input,
+                stop_input,
                 -1,
+                scan_shape[-1]- last_chunk_width,
+                scan_shape[-1],
+                1,
                 type="last",
             )
+            print(last_chunk_width)
+            print(cc)
             ss.append(cc)
-        else:
+
+        elif last_chunk_width != 0:
+
+            print(f"Offset {poff} remaining {remaining} {last_chunk_width} {n_points_chunk}")
             # combined end fill
             last_input_start = poff
             last_input_stop = n_points_chunk
-            last_output_start = 0
-            last_output_stop = remaining
+            # last_output_start = 0
+            # last_output_stop = remaining
+            last_output_start = last_chunk_width-1
+            last_output_stop = last_chunk_width-remaining-1
 
             current_input_start = 0
             current_input_stop = last_chunk_width - remaining
-            current_output_start = remaining
-            current_output_stop = n_points_chunk
+            
+            # current_output_start = remaining
+            # current_output_stop = n_points_chunk
+            # current_output_start = remaining
+            # current_output_stop = None
+            current_output_start = last_chunk_width-remaining-1
+            current_output_stop = None
+
 
             last = SliceInOut(
                 slice(last_input_start, last_input_stop),
-                slice(last_output_start, last_output_stop),
+                slice(last_output_start, last_output_stop, -1),
             )
 
             current = SliceInOut(
                 slice(current_input_start, current_input_stop),
-                slice(current_output_start, current_output_stop),
+                slice(current_output_start, current_output_stop,-1),
             )
 
             cc = ChunkSliceCollection("combined", spos)
             cc.current = current
             cc.last = last
             intermediate = SliceSize(
-                slice(scan_shape[-1], scan_shape[-1] - last_chunk_width - 1, -1),
+                slice(scan_shape[-1] - last_chunk_width, scan_shape[-1], 1),
                 last_chunk_width,
             )
             cc.intermediate = intermediate
             ss.append(cc)
+            print(cc)
+            # if spos == (3, 28):
+            #     raise Exception("oops")
             return ss
 
     if last_chunk_width == 0:
@@ -276,44 +308,48 @@ def snake_routine(poff, spos, n_points_chunk, scan_shape):
 
     remaining = n_points_chunk - poff
     if remaining == 0:
-        stop = spos[-1] - n_points_chunk
-        if stop == -1:
-            stop = None
+        start = spos[-1] - n_points_chunk + 1
+        # if stop == -1:
+        #     stop = None
 
         cc = build_collection(
-            spos, 0, n_points_chunk, 1, spos[-1], stop, -1, type="current"
+            spos, n_points_chunk, None, -1, start, spos[-1]+1, 1, type="current"
         )
         ss.append(cc)
     else:
         # can we write a combined?
         last_input_start = poff
         last_input_stop = n_points_chunk
-        last_output_start = 0
-        last_output_stop = remaining
+        # last_output_start = 0
+        # last_output_stop = remaining
+        last_output_start = n_points_chunk
+        last_output_stop = poff-1
 
         current_input_start = 0
         current_input_stop = n_points_chunk - remaining
-        current_output_start = remaining
-        current_output_stop = n_points_chunk
+        # current_output_start = remaining
+        # current_output_stop = n_points_chunk
+        current_output_start = poff-1
+        current_output_stop = None
 
-        stop = spos[-1] - poff
-        if stop == -1:
-            stop = None
+        start = spos[-1] - poff +1
+        # if stop == -1:
+        #     stop = None
 
         last = SliceInOut(
             slice(last_input_start, last_input_stop),
-            slice(last_output_start, last_output_stop),
+            slice(last_output_start, last_output_stop,-1),
         )
 
         current = SliceInOut(
             slice(current_input_start, current_input_stop),
-            slice(current_output_start, current_output_stop),
+            slice(current_output_start, current_output_stop,-1),
         )
 
         cc = ChunkSliceCollection("combined", spos)
         cc.current = current
         cc.last = last
-        intermediate = SliceSize(slice(spos[-1] + remaining, stop, -1), n_points_chunk)
+        intermediate = SliceSize(slice(start, spos[-1] + remaining+1, 1), n_points_chunk)
         cc.intermediate = intermediate
         ss.append(cc)
 

@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 import hdf5plugin
 import math
-from swmr_tools import ChunkSource, utils
+from swmr_tools import ChunkSource, chunk_utils, utils
 import time
 import multiprocessing as mp
 
@@ -166,3 +166,69 @@ def mock_scan(path):
             ds.flush()
             count += 1
             time.sleep(0.15)
+
+def test_chunk_write_raster(tmp_path):
+    f = str(tmp_path / "output.h5")
+    shape = [35, 28]
+    chunk_size = 7
+
+    npoints = math.prod(shape)
+
+    data = np.arange(chunk_size)
+    last_data = None
+
+    output = np.zeros(shape)
+    dsname = "output"
+
+    with h5py.File(f,'w') as ofh:
+
+        output = ofh.create_dataset(dsname, shape = shape, chunks = (1, chunk_size))
+
+        for i in range(0, npoints, chunk_size):
+            ss = chunk_utils.get_slice_structure(i, chunk_size, shape, False)
+            chunk_utils.write_data(ss, data, last_data, output)
+
+            last_data = data
+            data = data.copy()
+            data += chunk_size
+
+    expected = np.arange(npoints).reshape(shape)
+
+    with h5py.File(f,'r') as fh:
+        assert np.all(expected == fh[dsname][...])
+
+
+def test_chunk_write_snake(tmp_path):
+    f = str(tmp_path / "output.h5")
+    shape = [35, 28]
+    chunk_size = 7
+
+    npoints = math.prod(shape)
+
+    data = np.arange(chunk_size)
+    last_data = None
+
+    output = np.zeros(shape)
+    dsname = "output"
+
+    with h5py.File(f,'w') as ofh:
+
+        output = ofh.create_dataset(dsname, shape = shape, chunks = (1, chunk_size))
+
+        for i in range(0, npoints, chunk_size):
+            ss = chunk_utils.get_slice_structure(i, chunk_size, shape, True)
+            chunk_utils.write_data(ss, data, last_data, output)
+
+            last_data = data
+            data = data.copy()
+            data += chunk_size
+
+    expected = np.arange(npoints).reshape(shape)
+
+    for i in range(npoints):
+        position = utils.get_position_snake(i, shape, len(shape))
+        s = [slice(p, p + 1) for p in position]
+        expected[tuple(s)] = i
+
+    with h5py.File(f,'r') as fh:
+        assert np.all(expected == fh[dsname][...])
