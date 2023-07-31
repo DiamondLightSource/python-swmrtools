@@ -369,12 +369,12 @@ def build_small_raster_complete(pos, i, scan_shape):
 
 
 def build_small_snake_complete(pos, i, scan_shape):
-    in_start = i * scan_shape[-1]
-    in_stop = scan_shape[-1] * (i + 1)
-    in_step = None
-    out_stop = None
-    out_start = pos[-1] + scan_shape[-1]
-    out_step = -1
+    in_start = scan_shape[-1] * (i + 1)-1
+    in_stop = i * scan_shape[-1]-1
+    in_step = -1
+    out_start = 0
+    out_stop = pos[-1] + scan_shape[-1]
+    out_step = 1
     return build_collection(
         pos, in_start, in_stop, in_step, out_start, out_stop, out_step
     )
@@ -393,12 +393,12 @@ def build_small_raster_offset(pos, i, scan_shape, offset):
 
 
 def build_small_snake_offset(pos, i, scan_shape, offset):
-    in_start = i * scan_shape[-1] + offset
-    in_stop = scan_shape[-1] * (i + 1) + offset
-    in_step = None
-    out_start = scan_shape[-1]
-    out_stop = None
-    out_step = -1
+    in_stop = i * scan_shape[-1] + offset -1
+    in_start = scan_shape[-1] * (i + 1) + offset -1
+    in_step = -1
+    out_stop = scan_shape[-1]
+    out_start = 0
+    out_step = 1
     return build_collection(
         pos, in_start, in_stop, in_step, out_start, out_stop, out_step
     )
@@ -426,15 +426,16 @@ def build_small_snake_combined(spos, n_points_chunk, position_offset, scan_shape
     n_remaining = n_points_chunk - position_offset
     # Two reads contributing to chunk
     current = SliceInOut(
-        slice(0, scan_shape[-1] - n_remaining),
-        slice(n_remaining, scan_shape[-1]),
+        slice(scan_shape[-1] - n_remaining-1, None,-1),
+        slice(0, scan_shape[-1]-n_remaining),
     )
-    last = SliceInOut(slice(n_points_chunk - n_remaining, None), slice(0, n_remaining))
+    last = SliceInOut(slice(n_points_chunk,position_offset-1,-1), slice(scan_shape[-1]-n_remaining, scan_shape[-1]))
     cc = ChunkSliceCollection("combined", spos)
     cc.current = current
     cc.last = last
-    intermediate = SliceSize(slice(scan_shape[-1], None, -1), scan_shape[-1])
+    intermediate = SliceSize(slice(0, scan_shape[-1], 1), scan_shape[-1])
     cc.intermediate = intermediate
+    print(f"Rem {n_remaining} {cc}")
     return cc
 
 
