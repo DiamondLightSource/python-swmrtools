@@ -8,7 +8,10 @@ import pytest
 shapes = [
     ([5, 15], 32),
     ([7, 15], 46),
-    ([3, 51], 100),
+    ([20, 4], 12),
+    ([20, 4], 6),
+    ([35, 28], 50),
+    ([35, 51], 100),
     ([4, 4, 3], 10),
     ([4, 5, 3], 10),
     ([2, 2], 2),
@@ -48,8 +51,7 @@ def check_start(ss, chunk_size):
         else:
             so = s.intermediate.slice
 
-        #h5py doesnt support -ve step
-            
+        # h5py doesnt support -ve step
 
         # start of output write should always be aligned to chunk
         if so.step is None or so.step == 1:
@@ -113,7 +115,7 @@ def test_snake_scan(shape, chunk_size):
     print("EXPECTED")
     print(expected)
     print("DIFF")
-    print(output-expected)
+    print(output - expected)
     assert np.all(output == expected)
 
 

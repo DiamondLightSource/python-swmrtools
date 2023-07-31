@@ -167,11 +167,22 @@ def mock_scan(path):
             count += 1
             time.sleep(0.15)
 
+
 def test_chunk_write_raster(tmp_path):
     f = str(tmp_path / "output.h5")
     shape = [35, 28]
     chunk_size = 7
+    run_raster_write(f, shape, chunk_size)
 
+
+def test_chunk_write_raster_smallx(tmp_path):
+    f = str(tmp_path / "output.h5")
+    shape = [35, 28]
+    chunk_size = 50
+    run_raster_write(f, shape, chunk_size)
+
+
+def run_raster_write(f, shape, chunk_size):
     npoints = math.prod(shape)
 
     data = np.arange(chunk_size)
@@ -180,9 +191,10 @@ def test_chunk_write_raster(tmp_path):
     output = np.zeros(shape)
     dsname = "output"
 
-    with h5py.File(f,'w') as ofh:
+    chunks = (1, chunk_size) if chunk_size < shape[-1] else (1, shape[-1])
 
-        output = ofh.create_dataset(dsname, shape = shape, chunks = (1, chunk_size))
+    with h5py.File(f, "w") as ofh:
+        output = ofh.create_dataset(dsname, shape=shape, chunks=chunks)
 
         for i in range(0, npoints, chunk_size):
             ss = chunk_utils.get_slice_structure(i, chunk_size, shape, False)
@@ -194,7 +206,7 @@ def test_chunk_write_raster(tmp_path):
 
     expected = np.arange(npoints).reshape(shape)
 
-    with h5py.File(f,'r') as fh:
+    with h5py.File(f, "r") as fh:
         assert np.all(expected == fh[dsname][...])
 
 
@@ -203,6 +215,18 @@ def test_chunk_write_snake(tmp_path):
     shape = [35, 28]
     chunk_size = 7
 
+    run_snake_write(f, shape, chunk_size)
+
+
+def test_chunk_write_snake_smallx(tmp_path):
+    f = str(tmp_path / "output.h5")
+    shape = [35, 28]
+    chunk_size = 50
+
+    run_snake_write(f, shape, chunk_size)
+
+
+def run_snake_write(f, shape, chunk_size):
     npoints = math.prod(shape)
 
     data = np.arange(chunk_size)
@@ -211,9 +235,10 @@ def test_chunk_write_snake(tmp_path):
     output = np.zeros(shape)
     dsname = "output"
 
-    with h5py.File(f,'w') as ofh:
+    chunks = (1, chunk_size) if chunk_size < shape[-1] else (1, shape[-1])
 
-        output = ofh.create_dataset(dsname, shape = shape, chunks = (1, chunk_size))
+    with h5py.File(f, "w") as ofh:
+        output = ofh.create_dataset(dsname, shape=shape, chunks=chunks)
 
         for i in range(0, npoints, chunk_size):
             ss = chunk_utils.get_slice_structure(i, chunk_size, shape, True)
@@ -230,5 +255,5 @@ def test_chunk_write_snake(tmp_path):
         s = [slice(p, p + 1) for p in position]
         expected[tuple(s)] = i
 
-    with h5py.File(f,'r') as fh:
+    with h5py.File(f, "r") as fh:
         assert np.all(expected == fh[dsname][...])
