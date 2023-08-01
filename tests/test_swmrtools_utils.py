@@ -73,7 +73,7 @@ def test_get_position_snake():
         inc_shape_snake(-1, shape, scan_shape, snaking)
 
 
-def test_get_position_general():
+def test_get_position_snake_row():
     max_shape = [3, 3, 3]
 
     scan_rank = len(max_shape)
@@ -82,7 +82,9 @@ def test_get_position_general():
     scan_shape = max_shape[:scan_rank]
     shape = [0] * scan_rank
     for i in range(np.prod(max_shape[:scan_rank]) - 1):
-        out, is_fast_snaking = utils.get_position_general(i, max_shape)
+        out, is_fast_snaking = utils.get_position_snake_row(
+            i, max_shape, len(max_shape)
+        )
         print("out {} shape {}".format(out, shape))
         print(f"fast snake row: {is_fast_snaking}")
         assert out == tuple(shape)

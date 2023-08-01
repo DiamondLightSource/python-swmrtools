@@ -422,7 +422,9 @@ def _build_small_snake_combined(spos, n_points_chunk, position_offset, scan_shap
 def _x_smaller_than_chunk(index, spos, n_points_chunk, scan_shape, snake):
     is_snake_row = False
     if snake:
-        spos, is_snake_row = utils.get_position_general(index, scan_shape)
+        spos, is_snake_row = utils.get_position_snake_row(
+            index, scan_shape, len(scan_shape)
+        )
     else:
         spos = utils.get_position(index, scan_shape, len(scan_shape))
 
@@ -439,8 +441,8 @@ def _x_smaller_than_chunk(index, spos, n_points_chunk, scan_shape, snake):
                 break
 
             if snake:
-                tpos, is_snake_row = utils.get_position_general(
-                    index + (i) * scan_shape[-1], scan_shape
+                tpos, is_snake_row = utils.get_position_snake_row(
+                    index + (i) * scan_shape[-1], scan_shape, len(scan_shape)
                 )
             else:
                 tpos = utils.get_position(
@@ -481,8 +483,8 @@ def _x_smaller_than_chunk(index, spos, n_points_chunk, scan_shape, snake):
                 break
 
             if snake:
-                tpos, is_snake_row = utils.get_position_general(
-                    updated_index, scan_shape
+                tpos, is_snake_row = utils.get_position_snake_row(
+                    updated_index, scan_shape, len(scan_shape)
                 )
             else:
                 tpos = utils.get_position(updated_index, scan_shape, len(scan_shape))
@@ -530,7 +532,9 @@ def get_slice_structure(index, n_points_chunk, scan_shape, snake):
     # and, if snake, whether that row is running backwards
     is_snake_row = False
     if snake:
-        spos, is_snake_row = utils.get_position_general(index, scan_shape)
+        spos, is_snake_row = utils.get_position_snake_row(
+            index, scan_shape, len(scan_shape)
+        )
     else:
         spos = utils.get_position(index, scan_shape, len(scan_shape))
 

@@ -63,6 +63,7 @@ def test_mock_scan(tmp_path):
 
     p.join()
 
+
 def create_test_file(path):
     with h5py.File(path, "w") as fh:
         shape = (25, 4, 5)

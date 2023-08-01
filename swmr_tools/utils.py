@@ -49,38 +49,39 @@ def get_position_snake(index, shape, scan_rank):
     (0,0)
 
     """
-    non_snake = get_position(index, shape, scan_rank)
-    out = [*non_snake]
-    sum = non_snake[0]
-    for i in range(1, len(out)):
-        if sum % 2 == 1:
-            out[i] = shape[i] - non_snake[i] - 1
+    # non_snake = get_position(index, shape, scan_rank)
+    # out = [*non_snake]
+    # sum = non_snake[0]
+    # for i in range(1, len(out)):
+    #     if sum % 2 == 1:
+    #         out[i] = shape[i] - non_snake[i] - 1
 
-        sum += out[i]
+    #     sum += out[i]
 
-    return tuple(out)
+    return get_position_snake_row(index, shape, scan_rank)[0]
+
+    # return tuple(out)
 
 
-def get_position_general(index, shape):
+def get_position_snake_row(index, shape, scan_rank):
     """
     Returns the position in a snake scan associated with the given index
 
         Parameters:
             index (int): Flattened index of scan point
-            shape (array): Shape of dataset of interest
-            scan_rank (int): Rank of scan (must be <= len(shape))
+            shape (array): Shape of scan
 
         Returns:
-            position (tuple): Ndimensional position in scan associated with the index
+            position_info (tuple): Ndimensional position in scan associated with the index, boolean showing if fast row is reversed
     Examples
     --------
 
-    >>> utils.get_position_snake(0, [3,4,5], 2)
+    >>> utils.get_position_snake_row(0, [3,4,5], 2)
     (0,0)
 
     """
     snake_row = False
-    non_snake = get_position(index, shape, len(shape))
+    non_snake = get_position(index, shape, scan_rank)
     out = [*non_snake]
     sum = non_snake[0]
     for i in range(1, len(out)):
