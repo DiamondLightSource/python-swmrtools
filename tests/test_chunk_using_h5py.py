@@ -63,64 +63,6 @@ def test_mock_scan(tmp_path):
 
     p.join()
 
-
-# def test_real_file():
-#     fp = "/dls/i18/data/2023/cm33872-3/i18-205537.nxs"
-#     dp = "/entry/instrument/Xspress3A/raw_mca0"
-#     fo = "/scratch/data/odin_test_swmrtools.nxs"
-
-#     snake_key = '"alternating":true'
-#     model = "/entry/diamond_scan/scan_models"
-#     scan_shape = "/entry/diamond_scan/scan_shape"
-
-#     with h5py.File(fp,'r') as fh, h5py.File(fo, 'w', libver='latest') as ofh:
-#         ds = fh[dp]
-#         cshape = ds.chunks
-#         is_snake = snake_key in fh[model][...].item().decode()
-#         sshape = fh[scan_shape][...]
-
-#         nxe = ofh.create_group("entry")
-#         nxe.attrs["NX_class"] = "NXentry"
-
-#         mcag = nxe.create_group("mca")
-#         mcag.attrs["NX_class"] = "NXdata"
-#         mcag.attrs["signal"] = "data"
-
-#         sumg = nxe.create_group("sum")
-#         sumg.attrs["NX_class"] = "NXdata"
-#         sumg.attrs["signal"] = "data"
-
-#         xaxis = fh["/entry/Xspress3A/t1x_value_set"][:sshape[1]]
-#         yaxis = fh["/entry/Xspress3A/t1y_value_set"][::sshape[1]]
-
-#         mcag.attrs["axes"] = ["t1y_value_set", "t1x_value_set", "."]
-#         mcag.create_dataset("t1x_value_set",data = xaxis)
-#         mcag.create_dataset("t1y_value_set",data = yaxis)
-
-#         sumg.attrs["axes"] = ["t1y_value_set", "t1x_value_set"]
-#         sumg.create_dataset("t1x_value_set",data = xaxis)
-#         sumg.create_dataset("t1y_value_set",data = yaxis)
-
-#         output = np.zeros(sshape)
-#         omca = mcag.create_dataset("data", shape = (sshape[0],sshape[1], cshape[2]), chunks=(1,cshape[0],cshape[2]), dtype = ds.dtype, compression="lzf")
-#         osum = sumg.create_dataset("data", data = output)
-
-
-#         dd = {"data" : ds}
-#         cs = ChunkSource(dd)
-#         last_mca = None
-#         last_ff = None
-#         for c in cs:
-#             mcas = c["data"].squeeze()
-#             ff = mcas.sum(axis = 1)
-#             pos = utils.get_position_snake(c.index, sshape, len(sshape))
-#             ss = chunk_utils.get_slice_structure(pos,cshape[0],sshape, True)
-#             chunk_utils.write_data(ss, pos, mcas, last_mca, omca)
-#             chunk_utils.write_data(ss, pos, ff, last_ff, osum)
-#             last_ff = ff
-#             last_mca = mcas
-
-
 def create_test_file(path):
     with h5py.File(path, "w") as fh:
         shape = (25, 4, 5)
