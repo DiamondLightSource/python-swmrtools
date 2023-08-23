@@ -3,7 +3,6 @@ import numpy as np
 
 
 def test_framereader_scalar():
-
     r = np.arange(10)
 
     fr = FrameReader(r, 1)
@@ -14,7 +13,6 @@ def test_framereader_scalar():
 
 
 def test_framereader_linear():
-
     r = np.arange(100)
     r = r.reshape((10, 10))
 
@@ -29,7 +27,6 @@ def test_framereader_linear():
 
 
 def test_framereader_image():
-
     r = np.arange(2000)
     r = r.reshape((10, 10, 20))
 
@@ -45,7 +42,6 @@ def test_framereader_image():
 
 
 def test_framereader_image_grid():
-
     r = np.arange(6000)
     r = r.reshape((3, 10, 10, 20))
 

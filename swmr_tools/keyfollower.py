@@ -102,7 +102,6 @@ class KeyFollower:
         return rank - rank_cor
 
     def __next__(self):
-
         if self.current_key < self.current_max:
             self.current_key += 1
             return self.current_key
@@ -129,7 +128,6 @@ class KeyFollower:
         self.end_time = time.time() + self.timeout
 
     def _is_next(self):
-
         karray = self._get_keys()
         if not karray:
             return False
@@ -185,7 +183,6 @@ class KeyFollower:
         refresh_dataset(self.finished_dataset)
 
         if self.finished_dataset.size != 1:
-
             logger.warning(
                 f"finished dataset ({self.finished_dataset}) is non-singular"
             )
@@ -243,7 +240,6 @@ class RowKeyFollower:
         return self
 
     def check_datasets(self):
-
         self.inner_key_follower.check_datasets()
         self.scan_rank = self.inner_key_follower.scan_rank
         self.maxshape = self.inner_key_follower.maxshape
@@ -258,7 +254,6 @@ class RowKeyFollower:
             self.row_size = rsize
 
     def __next__(self):
-
         for i in range(self.row_size - 1):
             next(self.inner_key_follower)
 

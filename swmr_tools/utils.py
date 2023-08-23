@@ -49,16 +49,50 @@ def get_position_snake(index, shape, scan_rank):
     (0,0)
 
     """
+    # non_snake = get_position(index, shape, scan_rank)
+    # out = [*non_snake]
+    # sum = non_snake[0]
+    # for i in range(1, len(out)):
+    #     if sum % 2 == 1:
+    #         out[i] = shape[i] - non_snake[i] - 1
+
+    #     sum += out[i]
+
+    return get_position_snake_row(index, shape, scan_rank)[0]
+
+    # return tuple(out)
+
+
+def get_position_snake_row(index, shape, scan_rank):
+    """
+    Returns the position in a snake scan associated with the given index
+
+        Parameters:
+            index (int): Flattened index of scan point
+            shape (array): Shape of scan
+
+        Returns:
+            position_info (tuple): Ndimensional position in scan associated with the index, boolean showing if fast row is reversed
+    Examples
+    --------
+
+    >>> utils.get_position_snake_row(0, [3,4,5], 2)
+    (0,0)
+
+    """
+    snake_row = False
     non_snake = get_position(index, shape, scan_rank)
     out = [*non_snake]
     sum = non_snake[0]
     for i in range(1, len(out)):
         if sum % 2 == 1:
             out[i] = shape[i] - non_snake[i] - 1
+            if i == len(out) - 1:
+                snake_row = True
 
         sum += out[i]
 
-    return tuple(out)
+    return tuple(out), snake_row
 
 
 def get_row_slice(index, shape, scan_rank):
@@ -115,7 +149,6 @@ def create_dataset(data, scan_maxshape, fh, path, **kwargs):
 
     # if chunks not set use data shape
     if "chunks" not in kwargs:
-
         if data.size < 10:
             c = [1 if i is None else i for i in maxshape]
             kwargs["chunks"] = tuple(c)
@@ -236,7 +269,6 @@ def check_file_readable(path, datasets, timeout=10, retrys=5):
 
 
 def convert_stack_to_grid(slices, scan_shape, snake=False):
-
     index = slices[0].start
 
     if not snake:

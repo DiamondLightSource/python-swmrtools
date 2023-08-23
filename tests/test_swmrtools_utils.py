@@ -4,7 +4,6 @@ import h5py
 
 
 def test_row_slice():
-
     shape = [3, 4, 5, 6, 7, 8]
     index = 5
     scan_rank = 4
@@ -50,7 +49,6 @@ def test_row_slice():
 
 
 def test_get_position():
-
     index = 0
     shape = [2, 3, 4, 5]
     scan_rank = 2
@@ -62,7 +60,6 @@ def test_get_position():
 
 
 def test_get_position_snake():
-
     max_shape = [3, 4, 5, 4, 8, 8]
     scan_rank = 4
 
@@ -72,6 +69,24 @@ def test_get_position_snake():
     for i in range(np.prod(max_shape[:scan_rank]) - 1):
         out = utils.get_position_snake(i, max_shape, scan_rank)
         print("out {} shape {}".format(out, shape))
+        assert out == tuple(shape)
+        inc_shape_snake(-1, shape, scan_shape, snaking)
+
+
+def test_get_position_snake_row():
+    max_shape = [3, 3, 3]
+
+    scan_rank = len(max_shape)
+
+    snaking = [False] * scan_rank
+    scan_shape = max_shape[:scan_rank]
+    shape = [0] * scan_rank
+    for i in range(np.prod(max_shape[:scan_rank]) - 1):
+        out, is_fast_snaking = utils.get_position_snake_row(
+            i, max_shape, len(max_shape)
+        )
+        print("out {} shape {}".format(out, shape))
+        print(f"fast snake row: {is_fast_snaking}")
         assert out == tuple(shape)
         inc_shape_snake(-1, shape, scan_shape, snaking)
 
@@ -138,7 +153,6 @@ def test_append_data(tmp_path):
 
 
 def test_nexus_utils(tmp_path):
-
     fin = str(tmp_path / "in.h5")
     fout = str(tmp_path / "out.h5")
 
@@ -196,7 +210,6 @@ def test_check_file_readable(tmp_path):
 
 
 def test_convert_stack_to_grid():
-
     scan_shape = [3, 4]
     slices = [
         slice(0, None, 1),
