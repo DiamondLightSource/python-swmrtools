@@ -127,7 +127,9 @@ def test_write():
 
     scalar_out = np.zeros(shape)
 
-    vectors = np.vstack([scalars] * 6).T
+    vectors = np.arange(1, (chunk_size) * 6 + 1)
+    vectors.shape = [chunk_size, 6]
+
     vector_shape = shape + [vectors.shape[1]]
     vector_out = np.zeros(vector_shape)
 
@@ -140,10 +142,7 @@ def test_write():
 
     chunk_utils.write_data(ss, vectors, vectors, vector_out)
 
-    assert vector_out[0, 10, 0] == 1
-    assert vector_out[0, 19, 0] == 10
-    assert vector_out[0, 10, 5] == 1
-    assert vector_out[0, 19, 5] == 10
+    assert np.all(vector_out[0, 10:20, :] == vectors)
 
     ss = chunk_utils.get_slice_structure(30, chunk_size, shape, True)
     chunk_utils.write_data(ss, scalars, scalars, scalar_out)
@@ -153,7 +152,4 @@ def test_write():
 
     chunk_utils.write_data(ss, vectors, vectors, vector_out)
 
-    assert vector_out[0, 10, 0] == 1
-    assert vector_out[0, 19, 0] == 10
-    assert vector_out[0, 10, 5] == 1
-    assert vector_out[0, 19, 5] == 10
+    assert np.all(vector_out[1, 22, :] == vectors[3, :])
