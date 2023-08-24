@@ -85,13 +85,13 @@ def write_data(slice_structure, data, last_data, output):
             si = s.current.input
             so = s.current.output
 
-            input_slice = [slice(0, 1)] * len(data.shape)
+            input_slice = [slice(0, None)] * len(data.shape)
             input_slice[0] = si
             flush_data = data[tuple(input_slice)]
         elif s.type == "last":
             si = s.last.input
             so = s.last.output
-            input_slice = [slice(0, 1)] * len(last_data.shape)
+            input_slice = [slice(0, None)] * len(last_data.shape)
             input_slice[0] = si
 
             flush_data = last_data[tuple(input_slice)]
@@ -103,13 +103,13 @@ def write_data(slice_structure, data, last_data, output):
 
             ls = s.last.input
             li = s.last.output
-            last_slice = [slice(0, 1)] * len(last_data.shape)
+            last_slice = [slice(0, None)] * len(last_data.shape)
             last_slice[0] = ls
             intermediate[li] = last_data[tuple(last_slice)]
 
             cs = s.current.input
             ci = s.current.output
-            input_slice = [slice(0, 1)] * len(data.shape)
+            input_slice = [slice(0, None)] * len(data.shape)
             input_slice[0] = cs
             intermediate[ci] = data[tuple(input_slice)]
 
