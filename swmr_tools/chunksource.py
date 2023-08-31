@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class ChunkSource:
     def __init__(self, datasets, timeout=10, finished_dataset=None):
-        self.check_datasets(datasets.values())
+        self._check_datasets(datasets.values())
         self._datasets = datasets
         self.finished_dataset = finished_dataset
         self.timeout = timeout
@@ -23,15 +23,11 @@ class ChunkSource:
             if ms is not None and (self.max_size is None or self.max_size > ms):
                 self.max_size = ms
 
-        self.min_n_chunks = min(
-            [ds.id.get_num_chunks() for ds in self._datasets.values()]
-        )
-
         self.chunk_size = list(self._datasets.values())[0].chunks[0]
 
         self.current_index = 0
 
-    def check_datasets(self, datasets):
+    def _check_datasets(self, datasets):
         for d in datasets:
             s = d.shape
             c = d.chunks
@@ -40,7 +36,7 @@ class ChunkSource:
                 if s[i] != c[i]:
                     raise RuntimeError(f"Chunk {c} and shape {s} not compatible")
 
-    def read_datasets(self, current_index, datasets, output):
+    def _read_datasets(self, current_index, datasets, output):
         for n, d in datasets.items():
             s = list(d.chunks)
             s[0] = -1
@@ -61,9 +57,10 @@ class ChunkSource:
                     "Dataset filters not supported for direct chunk read"
                 )
 
+            # since we have checked the index and shape this should always work...
             chunk = d.id.read_direct_chunk(coffset)
 
-            ds = self.chunk2numpy(chunk[1], d.dtype, s, use_blosc)
+            ds = self._chunk2numpy(chunk[1], d.dtype, s, use_blosc)
 
             if self.max_size < (current_index * self.chunk_size + self.chunk_size):
                 s[0] = self.max_size - current_index * self.chunk_size
@@ -74,37 +71,57 @@ class ChunkSource:
 
             output[n] = ds
 
-    def chunk2numpy(self, blob, dtype, shape, use_blosc):
+    def _chunk2numpy(self, blob, dtype, shape, use_blosc):
         if use_blosc:
             blob = blosc.decompress(blob)
         npa = np.frombuffer(blob, dtype=dtype, count=-1)
         return npa.reshape(shape)
 
+    def _check_index(self, datasets, current_index):
+        for n, d in datasets.items():
+            s = list(d.chunks)
+            s[0] = -1
+
+            coffset = [0] * len(d.shape)
+
+            flat_index = current_index * self.chunk_size
+            coffset[0] = flat_index
+
+            si = d.id.get_chunk_info_by_coord(tuple(coffset))
+
+            # if offset is None chunk is not written
+            if si.byte_offset is None:
+                return False
+
+            # if shape is less than (or equal) to current index
+            # chunk is flushed (offset not None), but metadata not updated
+            if d.shape[0] <= flat_index:
+                return False
+
+        return True
+
     def __iter__(self):
         return self
 
     def __next__(self):
-        if self.current_index < self.min_n_chunks:
+        if self._check_index(self._datasets, self.current_index):
             return self._generate_output()
-        else:
-            start_time = time.time()
-            while self.timeout > (time.time() - start_time):
-                time.sleep(self.timeout / 20.0)
-                self._check_finished_dataset()
 
-                for ds in self._datasets.values():
-                    utils.refresh_dataset(ds)
-                tmp_min = min(
-                    [ds.id.get_num_chunks() for ds in self._datasets.values()]
-                )
-                if tmp_min > self.min_n_chunks:
-                    self.min_n_chunks = tmp_min
-                    return self._generate_output()
+        start_time = time.time()
+        while self.timeout > (time.time() - start_time):
+            time.sleep(self.timeout / 20.0)
+            self._check_finished_dataset()
 
-                if self.finished_set:
-                    raise StopIteration
+            for ds in self._datasets.values():
+                utils.refresh_dataset(ds)
 
-            raise StopIteration
+            if self._check_index(self._datasets, self.current_index):
+                return self._generate_output()
+
+            if self.finished_set:
+                raise StopIteration
+
+        raise StopIteration
 
     def _generate_output(self):
         output = SliceDict()
@@ -117,7 +134,7 @@ class ChunkSource:
         ]
         output.maxshape = [self.max_size]
 
-        self.read_datasets(self.current_index, self._datasets, output)
+        self._read_datasets(self.current_index, self._datasets, output)
 
         self.current_index += 1
 
