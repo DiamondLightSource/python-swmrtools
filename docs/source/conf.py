@@ -23,7 +23,7 @@ copyright = "2020, Diamond Light Source Ltd"
 author = "Richard E Parke"
 
 # The full version, including alpha/beta/rc tags
-release = "0.8.1"
+release = "0.9.0"
 
 
 # -- General configuration ---------------------------------------------------
